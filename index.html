@@ -1,0 +1,2491 @@
+<!DOCTYPE html>
+<html lang="hi" class="h-full">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Indian AI Factory - Task & Smart Reminder</title>
+  
+  <!-- PWA Manifest Meta Tags -->
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="IAF Tasks">
+  <meta name="description" content="Indian AI Factory Task Reminder and Smart Scheduling PWA">
+
+  <!-- Native App Favicon & Apple Touch Icon (No Chrome Badge) -->
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><rect width='128' height='128' rx='28' fill='%234f46e5'/><path d='M64 24 L86 52 L54 62 L74 94 L42 66 L66 56 Z' fill='%23ff9933'/><circle cx='64' cy='64' r='48' stroke='white' stroke-width='6' fill='none'/></svg>">
+  <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 128 128'><rect width='128' height='128' rx='28' fill='%234f46e5'/><circle cx='64' cy='64' r='48' stroke='white' stroke-width='6' fill='none'/><path d='M64 24 L86 52 L54 62 L74 94 L42 66 L66 56 Z' fill='%23ff9933'/></svg>">
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- FontAwesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- Canvas Confetti for Celebration -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#eef2ff',
+              100: '#e0e7ff',
+              500: '#6366f1',
+              600: '#4f46e5',
+              700: '#4338ca',
+              900: '#312e81'
+            },
+            saffron: '#FF9933',
+            indiaGreen: '#138808'
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Noto+Sans+Devanagari:wght@400;500;600;700&display=swap');
+    
+    body {
+      font-family: 'Plus Jakarta Sans', 'Noto Sans Devanagari', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Smooth custom scrollbars */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: rgba(0, 0, 0, 0.05);
+    }
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.3);
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.6);
+    }
+    .custom-glass {
+      background: rgba(255, 255, 255, 0.85);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+    }
+    .dark .custom-glass {
+      background: rgba(17, 24, 39, 0.88);
+    }
+  </style>
+</head>
+<body class="h-full bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col antialiased selection:bg-brand-500 selection:text-white transition-colors duration-200">
+
+  <!-- PWA Install Banner (Mobile Chrome style prompt) -->
+  <div id="pwaBanner" class="hidden bg-gradient-to-r from-brand-700 via-indigo-600 to-brand-900 text-white px-4 py-2.5 shadow-lg border-b border-indigo-400/30 flex items-center justify-between z-50">
+    <div class="flex items-center space-x-3">
+      <div class="w-9 h-9 rounded-xl bg-white/10 flex items-center justify-center text-lg border border-white/20">
+        <i class="fa-solid fa-cloud-arrow-down text-amber-300"></i>
+      </div>
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wider text-amber-300" data-i18n="pwaReady">PWA Feature Available</p>
+        <p class="text-xs text-white/90" data-i18n="pwaDesc">Install Indian AI Factory app on your mobile screen</p>
+      </div>
+    </div>
+    <div class="flex items-center space-x-2">
+      <button id="installPwaBtn" class="bg-white text-indigo-700 text-xs font-bold px-3 py-1.5 rounded-lg shadow-sm hover:bg-slate-100 active:scale-95 transition">
+        <i class="fa-solid fa-download mr-1"></i> <span data-i18n="installApp">Install App</span>
+      </button>
+      <button onclick="dismissPwaBanner()" class="text-white/70 hover:text-white p-1">
+        <i class="fa-solid fa-xmark text-sm"></i>
+      </button>
+    </div>
+  </div>
+
+  <!-- Main App Shell -->
+  <div class="flex flex-col h-full max-w-5xl mx-auto w-full px-2 sm:px-4 md:px-6">
+    
+    <!-- Top Navigation Header -->
+    <header class="py-3 px-3 my-2 rounded-2xl custom-glass border border-slate-200/80 dark:border-slate-800 shadow-sm flex items-center justify-between">
+      <!-- Brand Logo & Name -->
+      <div class="flex items-center space-x-3">
+        <div class="relative w-11 h-11 rounded-2xl bg-gradient-to-tr from-brand-600 to-indigo-400 flex items-center justify-center text-white shadow-md shadow-brand-500/20">
+          <i class="fa-solid fa-microchip text-xl"></i>
+          <span class="absolute -bottom-1 -right-1 flex h-3.5 w-3.5">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 border-2 border-white dark:border-slate-900"></span>
+          </span>
+        </div>
+        <div>
+          <div class="flex items-center space-x-1.5">
+            <h1 class="font-bold text-base sm:text-lg leading-tight bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 dark:from-brand-400 dark:to-indigo-300 bg-clip-text text-transparent">
+              Indian AI Factory
+            </h1>
+            <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300">PRO</span>
+          </div>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400" data-i18n="tagline">Smart Tasks & Autonomous Reminders</p>
+        </div>
+      </div>
+
+      <!-- Controls: Pomodoro, Voice, Language, Shortcut Info, Theme -->
+      <div class="flex items-center space-x-2">
+        <!-- Quick Pomodoro Button -->
+        <button onclick="openPomodoroModal()" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 hover:bg-rose-100 border border-rose-200 dark:border-rose-900 transition flex items-center space-x-1" title="Pomodoro Focus Timer">
+          <i class="fa-solid fa-stopwatch animate-pulse"></i>
+          <span class="hidden sm:inline">Focus</span>
+        </button>
+
+        <!-- Language Switcher -->
+        <button id="langToggleBtn" onclick="toggleLanguage()" class="px-2.5 py-1.5 text-xs font-semibold rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition flex items-center space-x-1 border border-slate-200 dark:border-slate-700" title="Change Language">
+          <i class="fa-solid fa-language text-brand-600 dark:text-brand-400"></i>
+          <span id="currentLangLabel">हिन्दी</span>
+        </button>
+
+        <!-- Chrome Shortcut Instructions Button -->
+        <button onclick="showShortcutGuide()" class="p-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700" title="Mobile Chrome Shortcut Guide">
+          <i class="fa-brands fa-chrome text-amber-500"></i>
+        </button>
+
+        <!-- Dark/Light Mode Switcher -->
+        <button onclick="toggleDarkMode()" class="p-2 text-xs rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition border border-slate-200 dark:border-slate-700">
+          <i id="themeIcon" class="fa-solid fa-moon"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Tabs & Today's Highlight -->
+    <main class="flex-1 overflow-y-auto pb-24 pt-1 space-y-4">
+      
+      <!-- Date Banner & Metrics Overview -->
+      <section class="grid grid-cols-1 sm:grid-cols-4 gap-3">
+        <!-- Main Today's Widget -->
+        <div class="sm:col-span-2 p-4 rounded-2xl bg-gradient-to-br from-brand-600 via-indigo-600 to-indigo-800 text-white shadow-lg relative overflow-hidden">
+          <div class="absolute -right-8 -bottom-8 opacity-15 pointer-events-none text-9xl">
+            <i class="fa-regular fa-calendar-check"></i>
+          </div>
+          <div class="relative z-10 flex flex-col justify-between h-full">
+            <div>
+              <div class="flex items-center justify-between mb-1">
+                <span class="text-xs uppercase tracking-wider font-semibold text-indigo-200 flex items-center gap-1.5">
+                  <i class="fa-solid fa-circle-dot text-emerald-300 text-[9px] animate-pulse"></i>
+                  <span data-i18n="todayFocus">Today's Focus Window</span>
+                </span>
+                <span id="liveTime" class="text-xs font-mono font-bold bg-white/20 px-2 py-0.5 rounded-full">00:00:00</span>
+              </div>
+              <h2 id="todayFormattedDate" class="text-xl sm:text-2xl font-extrabold tracking-tight">Today</h2>
+            </div>
+            
+            <div class="mt-4 pt-3 border-t border-white/20 flex items-center justify-between text-xs">
+              <div>
+                <span class="text-white/80" data-i18n="dueToday">Today's Tasks:</span>
+                <span id="statTodayCount" class="font-bold text-sm ml-1 text-white">0</span>
+              </div>
+              <div>
+                <span class="text-white/80" data-i18n="completed">Completed:</span>
+                <span id="statCompletedCount" class="font-bold text-sm ml-1 text-emerald-300">0</span>
+              </div>
+              <div class="flex items-center">
+                <span class="text-xs bg-emerald-500/30 text-emerald-200 border border-emerald-400/30 px-2 py-0.5 rounded-full font-medium" id="completionRate">0%</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security & Local Status Card -->
+        <div class="p-3.5 rounded-2xl custom-glass border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+          <div>
+            <div class="flex items-center space-x-2 text-brand-600 dark:text-brand-400 mb-1.5">
+              <i class="fa-solid fa-shield-halved text-lg"></i>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300" data-i18n="privacyTitle">100% Secure & Local</h3>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="privacyDesc">All tasks, notes & audio stored locally inside your browser sandbox.</p>
+          </div>
+          <div class="pt-2 flex items-center justify-between text-[11px] border-t border-slate-200 dark:border-slate-800">
+            <span class="text-slate-500 flex items-center gap-1"><i class="fa-solid fa-lock text-emerald-500"></i> No Cloud Leak</span>
+            <button onclick="backupRestoreModal(true)" class="text-brand-600 dark:text-brand-400 font-semibold hover:underline" data-i18n="backupBtn">Backup / JSON</button>
+          </div>
+        </div>
+
+        <!-- Quick AI Task Creator / Assistant -->
+        <div class="p-3.5 rounded-2xl custom-glass border border-slate-200 dark:border-slate-800 flex flex-col justify-between shadow-sm">
+          <div>
+            <div class="flex items-center space-x-2 text-purple-600 dark:text-purple-400 mb-1.5">
+              <i class="fa-solid fa-wand-magic-sparkles text-lg"></i>
+              <h3 class="text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300" data-i18n="smartAiAssistant">Indian AI Assistant</h3>
+            </div>
+            <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="smartAiDesc">Type or Speak in Hindi/English with Mic input!</p>
+          </div>
+          <div class="pt-2 flex gap-1.5">
+            <button onclick="openAiPromptModal(true)" class="p-2 bg-rose-500 hover:bg-rose-600 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center" title="Voice Input Task">
+              <i class="fa-solid fa-microphone"></i>
+            </button>
+            <button onclick="openAiPromptModal(false)" class="flex-1 py-1.5 px-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-xl text-xs font-bold shadow-sm transition flex items-center justify-center space-x-1.5">
+              <i class="fa-solid fa-bolt"></i>
+              <span data-i18n="aiSmartCreate">AI Auto Parse Task</span>
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- Indian Financial Cycles & Desi Quick Presets -->
+      <section class="p-3 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+        <div class="flex items-center space-x-2 text-xs">
+          <span class="w-6 h-6 rounded-lg bg-amber-500 text-white flex items-center justify-center font-bold text-[10px]">
+            <i class="fa-solid fa-receipt"></i>
+          </span>
+          <span class="font-bold text-slate-700 dark:text-slate-200" data-i18n="indianPresetsTitle">Desi Smart Presets (1-Tap Reminder):</span>
+        </div>
+        <div class="flex flex-wrap gap-1.5">
+          <button onclick="createDesiPreset('upi')" class="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-amber-500 text-slate-700 dark:text-slate-300">
+            💳 UPI Bill (1st of Month)
+          </button>
+          <button onclick="createDesiPreset('rent')" class="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-amber-500 text-slate-700 dark:text-slate-300">
+            🏠 House Rent (5th of Month)
+          </button>
+          <button onclick="createDesiPreset('maid')" class="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-amber-500 text-slate-700 dark:text-slate-300">
+            🧹 Maid & Doodh Pay
+          </button>
+          <button onclick="createDesiPreset('medicine')" class="px-2.5 py-1 text-[11px] font-semibold bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:border-amber-500 text-slate-700 dark:text-slate-300">
+            💊 Daily Medicine (9 PM)
+          </button>
+        </div>
+      </section>
+
+      <!-- Filter Tabs & Actions Bar -->
+      <section class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5">
+        <!-- View Filters -->
+        <div class="flex p-1 bg-slate-200/70 dark:bg-slate-900 rounded-2xl gap-1 text-xs font-semibold overflow-x-auto">
+          <button onclick="setFilter('today')" id="tabToday" class="filter-tab active px-3.5 py-1.5 rounded-xl transition-all shadow-sm bg-white dark:bg-slate-800 text-brand-600 dark:text-brand-400 flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-calendar-day"></i>
+            <span data-i18n="tabToday">Aaj Ki Tasks (Today)</span>
+          </button>
+          <button onclick="setFilter('upcoming')" id="tabUpcoming" class="filter-tab px-3.5 py-1.5 rounded-xl transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-clock-rotate-left"></i>
+            <span data-i18n="tabUpcoming">Upcoming / Recurring</span>
+          </button>
+          <button onclick="setFilter('completed')" id="tabCompleted" class="filter-tab px-3.5 py-1.5 rounded-xl transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-circle-check"></i>
+            <span data-i18n="tabCompleted">Completed</span>
+          </button>
+          <button onclick="setFilter('all')" id="tabAll" class="filter-tab px-3.5 py-1.5 rounded-xl transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-list-check"></i>
+            <span data-i18n="tabAll">Sabhi (All)</span>
+          </button>
+        </div>
+
+        <!-- Search & New Task Action -->
+        <div class="flex items-center gap-2">
+          <div class="relative flex-1 sm:w-56">
+            <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-slate-400 text-xs"></i>
+            <input type="text" id="taskSearchInput" oninput="renderTasks()" placeholder="Search tasks..." class="w-full text-xs pl-8 pr-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+          <button onclick="openTaskModal()" class="px-4 py-2 bg-brand-600 hover:bg-brand-700 active:scale-95 text-white text-xs font-bold rounded-xl shadow-md shadow-brand-500/25 transition flex items-center gap-1.5 whitespace-nowrap">
+            <i class="fa-solid fa-plus text-sm"></i>
+            <span data-i18n="addNewTask">New Task</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- Task List Container -->
+      <section id="tasksContainer" class="space-y-2.5 min-h-[300px]">
+        <!-- Dynamic Tasks Injected Here -->
+      </section>
+
+      <!-- Empty State View -->
+      <div id="emptyState" class="hidden flex-col items-center justify-center p-10 text-center rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-800">
+        <div class="w-16 h-16 rounded-full bg-brand-50 dark:bg-slate-800 flex items-center justify-center text-brand-600 dark:text-brand-400 text-2xl mb-3">
+          <i class="fa-regular fa-calendar-plus"></i>
+        </div>
+        <h4 class="font-bold text-slate-700 dark:text-slate-200 text-sm" data-i18n="noTasksTitle">Koi Task Nahi Mili!</h4>
+        <p class="text-xs text-slate-500 dark:text-slate-400 max-w-sm mt-1" data-i18n="noTasksDesc">Aaj ke liye koi reminder baki nahi h. Nayi task add karne ke liye "+ New Task" button pr click karein.</p>
+        <button onclick="openTaskModal()" class="mt-4 px-3 py-1.5 bg-brand-600 text-white rounded-lg text-xs font-bold">
+          <i class="fa-solid fa-plus mr-1"></i> <span data-i18n="addFirstTask">Add First Task</span>
+        </button>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- FLOATING ACTION BUTTON FOR MOBILE -->
+  <div class="fixed bottom-4 right-4 sm:hidden z-30 flex flex-col gap-2">
+    <button onclick="openAiPromptModal(true)" class="w-12 h-12 rounded-full bg-rose-500 text-white shadow-lg flex items-center justify-center text-lg active:scale-90 transition border-2 border-white/40" title="Voice Input">
+      <i class="fa-solid fa-microphone"></i>
+    </button>
+    <button onclick="openTaskModal()" class="w-14 h-14 rounded-full bg-gradient-to-r from-brand-600 to-indigo-600 text-white shadow-xl flex items-center justify-center text-xl active:scale-90 transition border-2 border-white/40">
+      <i class="fa-solid fa-plus"></i>
+    </button>
+  </div>
+
+  <!-- ADD / EDIT TASK MODAL WITH SUBTASKS -->
+  <div id="taskModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 overflow-y-auto">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-lg rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-150">
+      
+      <!-- Modal Header -->
+      <div class="px-5 py-4 bg-gradient-to-r from-brand-600 to-indigo-700 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-bell text-amber-300"></i>
+          <h3 id="modalTitle" class="font-bold text-sm sm:text-base" data-i18n="modalNewTask">Add New Task & Smart Reminder</h3>
+        </div>
+        <button onclick="closeTaskModal()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white transition">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Task Form -->
+      <form id="taskForm" onsubmit="handleSaveTask(event)" class="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+        <input type="hidden" id="taskId">
+
+        <!-- Task Title Column -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="colTitle">
+            Task Name / Title <span class="text-rose-500">*</span>
+          </label>
+          <input type="text" id="taskTitle" required placeholder="e.g. Call Client, Drink Water, Submit GST..." class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+        </div>
+
+        <!-- Category & Priority Row -->
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="colCategory">Category</label>
+            <select id="taskCategory" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+              <option value="Work">💼 Work / Business</option>
+              <option value="Personal">🏠 Personal / Ghar</option>
+              <option value="Health">💪 Health / Fitness</option>
+              <option value="Finance">💳 Bills / Payment</option>
+              <option value="Study">📚 Study / Learning</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="colPriority">Priority</label>
+            <select id="taskPriority" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+              <option value="high">🔴 High Priority</option>
+              <option value="medium" selected>🟡 Medium Priority</option>
+              <option value="low">🟢 Low Priority</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Smart Reminder Intervals Section -->
+        <div class="p-3.5 bg-indigo-50/70 dark:bg-indigo-950/40 rounded-2xl border border-indigo-100 dark:border-indigo-900/50 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-bold text-indigo-900 dark:text-indigo-300 flex items-center gap-1.5">
+              <i class="fa-solid fa-repeat text-brand-600"></i>
+              <span data-i18n="repeatInterval">Repeat / Reminder Cycle</span>
+            </span>
+            <span class="text-[10px] bg-indigo-200/60 dark:bg-indigo-900 text-indigo-800 dark:text-indigo-200 px-2 py-0.5 rounded-full font-bold" data-i18n="smartEngine">IAF Smart Engine</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <label class="flex items-center space-x-2 text-xs p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-brand-500">
+              <input type="radio" name="recurrence" value="none" checked class="text-brand-600 focus:ring-brand-500">
+              <span class="text-[11px] font-semibold" data-i18n="recNone">Once (Sirf Ek Baar)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-xs p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-brand-500">
+              <input type="radio" name="recurrence" value="daily" class="text-brand-600 focus:ring-brand-500">
+              <span class="text-[11px] font-semibold" data-i18n="recDaily">Daily (Har Din)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-xs p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-brand-500">
+              <input type="radio" name="recurrence" value="alternate" class="text-brand-600 focus:ring-brand-500">
+              <span class="text-[11px] font-semibold" data-i18n="recAlternate">Alternate Day (Ek din chodkar)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-xs p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-brand-500">
+              <input type="radio" name="recurrence" value="every2days" class="text-brand-600 focus:ring-brand-500">
+              <span class="text-[11px] font-semibold" data-i18n="rec2Days">Har 2 Din Baad</span>
+            </label>
+            <label class="flex items-center space-x-2 text-xs p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-brand-500">
+              <input type="radio" name="recurrence" value="weekly" class="text-brand-600 focus:ring-brand-500">
+              <span class="text-[11px] font-semibold" data-i18n="recWeekly">Weekly (Hafta)</span>
+            </label>
+            <label class="flex items-center space-x-2 text-xs p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 cursor-pointer hover:border-brand-500">
+              <input type="radio" name="recurrence" value="monthly" class="text-brand-600 focus:ring-brand-500">
+              <span class="text-[11px] font-semibold" data-i18n="recMonthly">Monthly (Mahina)</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Date & Time Columns -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="colDueDate">
+              Next Due Date <span class="text-rose-500">*</span>
+            </label>
+            <input type="date" id="taskDueDate" required class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="colDueTime">
+              Reminder Time <span class="text-rose-500">*</span>
+            </label>
+            <input type="time" id="taskDueTime" required class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500">
+          </div>
+        </div>
+
+        <!-- SUBTASKS / CHECKLIST SECTION -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              <i class="fa-solid fa-list-check text-brand-600 mr-1"></i> Sub-tasks / Checklist
+            </label>
+            <button type="button" onclick="addSubtaskField()" class="text-[11px] text-brand-600 dark:text-brand-400 font-bold hover:underline">
+              + Add Subtask
+            </button>
+          </div>
+          <div id="subtaskInputsContainer" class="space-y-1.5">
+            <!-- Dynamic subtask inputs injected here -->
+          </div>
+        </div>
+
+        <!-- Detailed Notes / Instructions -->
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1" data-i18n="colDescription">
+            Notes / Details
+          </label>
+          <textarea id="taskDescription" rows="2" placeholder="Task ke sath koi jaruri details, UPI ID ya document checklist..." class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500"></textarea>
+        </div>
+
+        <!-- Audio notification alert checkbox -->
+        <div class="flex items-center space-x-2 text-xs">
+          <input type="checkbox" id="taskAudioAlert" checked class="rounded text-brand-600 focus:ring-brand-500">
+          <label for="taskAudioAlert" class="text-slate-600 dark:text-slate-400 font-medium" data-i18n="audioAlertLabel">
+            Play IAF Smart Chime when reminder is due
+          </label>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-end space-x-2">
+          <button type="button" onclick="closeTaskModal()" class="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-xs font-semibold hover:bg-slate-100 dark:hover:bg-slate-800" data-i18n="cancelBtn">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 rounded-xl bg-gradient-to-r from-brand-600 to-indigo-600 text-white text-xs font-bold shadow-md hover:from-brand-700 hover:to-indigo-700 active:scale-95 transition" data-i18n="saveTaskBtn">
+            Save Task & Remind Me
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- AI NATURAL LANGUAGE & VOICE PARSER MODAL -->
+  <div id="aiModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95">
+      <div class="px-5 py-4 bg-gradient-to-r from-purple-600 to-indigo-600 text-white flex items-center justify-between">
+        <div class="flex items-center space-x-2">
+          <i class="fa-solid fa-brain text-amber-300"></i>
+          <h3 class="font-bold text-sm" data-i18n="aiParserTitle">Indian AI Smart Task Parser</h3>
+        </div>
+        <button onclick="closeAiModal()" class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white">
+          <i class="fa-solid fa-xmark text-xs"></i>
+        </button>
+      </div>
+      <div class="p-5 space-y-3">
+        <div class="flex items-center justify-between">
+          <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="aiModalHelper">
+            Hinglish me bolein ya likhein. AI date, time aur repeat cycle auto-extract kar lega!
+          </p>
+          <!-- Mic Toggle Button -->
+          <button id="aiMicBtn" onclick="toggleVoiceSpeechRecognition()" class="w-9 h-9 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 hover:bg-rose-200 flex items-center justify-center transition" title="Start voice recording">
+            <i id="aiMicIcon" class="fa-solid fa-microphone"></i>
+          </button>
+        </div>
+
+        <div id="recordingIndicator" class="hidden text-center py-1 text-xs text-rose-600 font-bold animate-pulse">
+          <i class="fa-solid fa-circle-dot mr-1"></i> Sun rahe hain... Bolein (Listening...)
+        </div>
+
+        <textarea id="aiInputPrompt" rows="3" placeholder="Example: Gym workout har din subah 6:30 baje ya Call Ramesh tomorrow at 4pm alternate day..." class="w-full text-xs p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500"></textarea>
+        
+        <!-- Suggestions chips -->
+        <div class="flex flex-wrap gap-1.5 pt-1">
+          <span onclick="setAiPrompt('Ghar ka doodh aur ration kal sham 5 baje daily')" class="text-[10px] bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg cursor-pointer transition">
+            🥛 Doodh daily sham 5 baje
+          </span>
+          <span onclick="setAiPrompt('Take medicine alternate day at 9:00 PM')" class="text-[10px] bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg cursor-pointer transition">
+            💊 Medicine alternate day 9 PM
+          </span>
+          <span onclick="setAiPrompt('Electricity bill pay karna h har 2 din baad at 11 AM')" class="text-[10px] bg-slate-100 dark:bg-slate-800 hover:bg-purple-100 dark:hover:bg-purple-900/40 text-slate-600 dark:text-slate-300 px-2 py-1 rounded-lg cursor-pointer transition">
+            ⚡ Bill har 2 din baad
+          </span>
+        </div>
+
+        <div class="pt-2 flex justify-end space-x-2">
+          <button onclick="closeAiModal()" class="px-3 py-1.5 text-xs rounded-lg text-slate-600 dark:text-slate-400" data-i18n="cancelBtn">Cancel</button>
+          <button onclick="processAiInput()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white text-xs font-bold rounded-xl shadow-md flex items-center space-x-1.5">
+            <i class="fa-solid fa-wand-sparkles"></i>
+            <span data-i18n="aiParseBtn">Parse & Create Task</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POMODORO & AMBIENT FOCUS MODAL -->
+  <div id="pomodoroModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 text-center space-y-4 animate-in fade-in zoom-in-95">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-sm text-rose-600 flex items-center gap-1.5">
+          <i class="fa-solid fa-stopwatch"></i> Indian AI Deep Focus
+        </h3>
+        <button onclick="closePomodoroModal()"><i class="fa-solid fa-xmark text-slate-400"></i></button>
+      </div>
+
+      <div class="py-4">
+        <div id="pomoTimerDisplay" class="text-5xl font-mono font-extrabold text-slate-800 dark:text-slate-100 tracking-tight">25:00</div>
+        <p id="pomoStatusText" class="text-xs text-slate-500 mt-2 font-medium">Deep Work Session (25 Mins)</p>
+      </div>
+
+      <!-- Controls -->
+      <div class="flex justify-center gap-3">
+        <button id="pomoStartBtn" onclick="togglePomodoroTimer()" class="px-5 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-md transition">
+          Start Focus
+        </button>
+        <button onclick="resetPomodoroTimer()" class="px-4 py-2 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-xs font-bold">
+          Reset
+        </button>
+      </div>
+
+      <!-- Ambient Sound Generator (Web Audio - 100% offline) -->
+      <div class="pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
+        <span class="text-slate-600 dark:text-slate-400 flex items-center gap-1">
+          <i class="fa-solid fa-cloud-rain text-indigo-500"></i> Ambient Rain Noise
+        </span>
+        <button id="ambientSoundToggle" onclick="toggleAmbientNoise()" class="px-2.5 py-1 text-[11px] font-bold rounded-lg bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+          Play
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SNOOZE & ALARM ACTIVE POPUP MODAL -->
+  <div id="alarmPopupModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border-2 border-rose-500 p-5 text-center space-y-4 animate-bounce">
+      <div class="w-16 h-16 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-600 mx-auto flex items-center justify-center text-3xl">
+        <i class="fa-solid fa-bell"></i>
+      </div>
+      <div>
+        <span class="text-xs font-bold text-rose-600 uppercase tracking-widest">IAF Reminder Alert</span>
+        <h3 id="alarmTaskTitle" class="text-base font-bold text-slate-800 dark:text-slate-100 mt-1">Task Name</h3>
+      </div>
+      <div class="grid grid-cols-2 gap-2 pt-2">
+        <button onclick="snoozeActiveAlarm(5)" class="py-2.5 px-3 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold">
+          Snooze 5 Min
+        </button>
+        <button onclick="snoozeActiveAlarm(15)" class="py-2.5 px-3 rounded-xl bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold">
+          Snooze 15 Min
+        </button>
+        <button onclick="dismissActiveAlarm(true)" class="col-span-2 py-2.5 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold">
+          <i class="fa-solid fa-check mr-1"></i> Mark as Completed
+        </button>
+        <button onclick="dismissActiveAlarm(false)" class="col-span-2 py-2 text-xs text-slate-500 font-semibold">
+          Dismiss
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SHORTCUT & CHROME INSTALL GUIDE MODAL -->
+  <div id="shortcutModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden p-5 space-y-4">
+      <div class="flex items-center justify-between pb-2 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center space-x-2.5">
+          <div class="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center font-bold">
+            <i class="fa-brands fa-chrome"></i>
+          </div>
+          <h3 class="font-bold text-sm" data-i18n="shortcutTitle">Chrome Shortcut & Install Options</h3>
+        </div>
+        <button onclick="closeShortcutModal()" class="text-slate-400 hover:text-slate-600">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="space-y-3 text-xs text-slate-600 dark:text-slate-300">
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-start space-x-3">
+          <span class="w-6 h-6 rounded-full bg-brand-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">1</span>
+          <div>
+            <p class="font-bold text-slate-800 dark:text-slate-100" data-i18n="chromeOpt1Title">Install App (PWA)</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400" data-i18n="chromeOpt1Desc">Chrome ke 3 dots (⋮) par tap karein aur <strong>"Install app"</strong> ya <strong>"Install Indian AI Factory"</strong> par click karein.</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-slate-50 dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-start space-x-3">
+          <span class="w-6 h-6 rounded-full bg-indigo-600 text-white flex items-center justify-center text-[10px] font-bold flex-shrink-0 mt-0.5">2</span>
+          <div>
+            <p class="font-bold text-slate-800 dark:text-slate-100" data-i18n="chromeOpt2Title">Add to Home Screen (Shortcut)</p>
+            <p class="text-[11px] text-slate-500 dark:text-slate-400" data-i18n="chromeOpt2Desc">Agar install button na dikhe to 3 dots (⋮) me <strong>"Add to Home screen" (होम स्क्रीन पर जोड़ें)</strong> chunein. Instant 1-tap shortcut create ho jayega.</p>
+          </div>
+        </div>
+
+        <div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 rounded-2xl text-[11px]">
+          <i class="fa-solid fa-circle-check mr-1 text-emerald-600"></i>
+          <span data-i18n="offlineFeatureNote">PWA feature enable hai: Ye app phone me bina internet ke bhi poori tarah offline kaam karti hai!</span>
+        </div>
+      </div>
+
+      <div class="pt-2 flex justify-end">
+        <button onclick="closeShortcutModal()" class="px-4 py-2 bg-brand-600 text-white font-bold rounded-xl text-xs" data-i18n="gotItBtn">
+          Theek Hai, Samajh Gaya (Got it)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- BACKUP & RESTORE MODAL -->
+  <div id="backupModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-sm rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 p-5 space-y-3">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-sm" data-i18n="backupModalTitle">Local Data Backup & Restore</h3>
+        <button onclick="backupRestoreModal(false)"><i class="fa-solid fa-xmark"></i></button>
+      </div>
+      <p class="text-xs text-slate-500 dark:text-slate-400" data-i18n="backupModalDesc">Aapka pura data aapke browser me encrypted format me save rehta hai. Aap ise export/import kar sakte hain.</p>
+      
+      <div class="space-y-2 pt-2">
+        <button onclick="exportDataJson()" class="w-full py-2.5 px-3 bg-brand-600 hover:bg-brand-700 text-white rounded-xl text-xs font-bold flex items-center justify-center gap-2">
+          <i class="fa-solid fa-file-export"></i> <span data-i18n="exportBtn">Download JSON Backup</span>
+        </button>
+        <label class="w-full py-2.5 px-3 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-bold flex items-center justify-center gap-2 cursor-pointer border border-slate-200 dark:border-slate-700">
+          <i class="fa-solid fa-file-import"></i> <span data-i18n="importBtn">Restore from File</span>
+          <input type="file" id="importJsonFileInput" accept=".json" onchange="importDataJson(event)" class="hidden">
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <!-- REGISTRATION GATEWAY OVERLAY (First time users must register) -->
+  <div id="registrationModal" class="fixed inset-0 bg-slate-950/90 backdrop-blur-md z-[100] hidden flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-2xl border border-indigo-500/30 overflow-hidden animate-in fade-in zoom-in-95">
+      <div class="p-6 bg-gradient-to-br from-brand-700 via-indigo-600 to-indigo-900 text-white text-center relative">
+        <div class="w-14 h-14 rounded-2xl bg-white/10 backdrop-blur-sm border border-white/20 mx-auto flex items-center justify-center text-2xl mb-2 text-amber-300">
+          <i class="fa-solid fa-id-card-clip"></i>
+        </div>
+        <h2 class="text-lg font-bold">Indian AI Factory Registration</h2>
+        <p class="text-xs text-white/80 mt-1">App access chalu karne ke liye kripya registration complete karein.</p>
+      </div>
+
+      <form id="regForm" onsubmit="handleRegistrationSubmit(event)" class="p-6 space-y-3.5">
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Aapka Pura Naam (Full Name) *</label>
+          <input type="text" id="regName" required placeholder="e.g. Rahul Sharma" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+        </div>
+
+        <div>
+          <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Mobile / WhatsApp Number *</label>
+          <input type="tel" id="regPhone" required pattern="[0-9]{10}" placeholder="10 digit number e.g. 9876543210" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500 font-medium">
+        </div>
+
+        <div class="grid grid-cols-2 gap-2">
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Email ID</label>
+            <input type="email" id="regEmail" placeholder="rahul@example.com" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none">
+          </div>
+          <div>
+            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">City / Shahar</label>
+            <input type="text" id="regCity" placeholder="e.g. Jaipur" class="w-full text-xs px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-800 dark:text-slate-100 focus:outline-none">
+          </div>
+        </div>
+
+        <div class="text-[11px] text-slate-500 flex items-center gap-1.5 pt-1">
+          <i class="fa-solid fa-lock text-emerald-500"></i>
+          <span>Data securely saved to Indian AI Factory Central Hub.</span>
+        </div>
+
+        <button type="submit" id="regSubmitBtn" class="w-full py-3 bg-gradient-to-r from-brand-600 to-indigo-600 hover:from-brand-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-lg transition active:scale-95">
+          Submit & Activate App
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- REMOTE ACCESS REVOKED / SUSPENDED BLOCK SCREEN -->
+  <div id="suspendedScreen" class="fixed inset-0 bg-slate-950 z-[200] hidden flex flex-col items-center justify-center p-6 text-center text-white">
+    <div class="w-20 h-20 rounded-3xl bg-rose-600/20 text-rose-500 flex items-center justify-center text-4xl mb-4 border border-rose-500/30">
+      <i class="fa-solid fa-ban animate-pulse"></i>
+    </div>
+    <h1 class="text-xl font-black text-rose-400">Access Suspended / बंद कर दिया गया</h1>
+    <p class="text-xs text-slate-400 max-w-sm mt-2 leading-relaxed">
+      Aapka Indian AI Factory Task App access admin dwara deactivate kar diya gaya hai. Kripya access chalu karwane ke liye admin se sampark karein.
+    </p>
+    <div class="mt-6 p-3 rounded-2xl bg-slate-900 border border-slate-800 text-xs text-slate-400">
+      Device ID: <span id="suspendedDeviceId" class="font-mono text-amber-400 font-bold"></span>
+    </div>
+    <button onclick="checkAccessStatusOnline()" class="mt-4 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl text-xs transition">
+      <i class="fa-solid fa-rotate-right mr-1"></i> Re-check Status
+    </button>
+  </div>
+
+  <!-- SEPARATE DEDICATED ADMIN PORTAL (ACCESSIBLE ONLY VIA /#admin OR ?admin=true) -->
+  <div id="dedicatedAdminPortal" class="fixed inset-0 bg-slate-950 z-[300] hidden overflow-y-auto p-4 sm:p-6 text-slate-100">
+    <div class="max-w-5xl mx-auto space-y-6">
+      
+      <!-- Admin Top Bar -->
+      <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 flex items-center justify-center text-xl border border-amber-500/30">
+            <i class="fa-solid fa-shield-halved"></i>
+          </div>
+          <div>
+            <h1 class="text-base sm:text-lg font-bold">Indian AI Factory — Master Admin Portal</h1>
+            <p class="text-xs text-slate-400">Private Dashboard • User Monitoring & Remote Access Control</p>
+          </div>
+        </div>
+        <button onclick="exitAdminPortal()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition">
+          <i class="fa-solid fa-arrow-left"></i> Back to Main App
+        </button>
+      </div>
+
+      <!-- Password Lock Screen for Admin Portal -->
+      <div id="adminAuthBox" class="max-w-md mx-auto my-12 p-6 rounded-3xl bg-slate-900 border border-slate-800 shadow-2xl space-y-4">
+        <div class="text-center space-y-1">
+          <div class="w-12 h-12 rounded-2xl bg-indigo-600/20 text-indigo-400 mx-auto flex items-center justify-center text-xl mb-2">
+            <i class="fa-solid fa-lock"></i>
+          </div>
+          <h2 class="text-base font-bold">Admin Authentication</h2>
+          <p class="text-xs text-slate-400">Enter master password to view registered users and control app access.</p>
+        </div>
+        <div>
+          <label class="block text-xs font-semibold text-slate-300 mb-1">Master Password</label>
+          <input type="password" id="adminMasterPassword" placeholder="Default: IAF@Admin2026" class="w-full text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-amber-500">
+        </div>
+        <button onclick="authenticateDedicatedAdmin()" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold text-xs rounded-xl shadow-lg transition">
+          <i class="fa-solid fa-key mr-1.5"></i> Unlock Admin Panel
+        </button>
+      </div>
+
+      <!-- Admin Dashboard Content (Visible after login) -->
+      <div id="adminMainDashboard" class="hidden space-y-6">
+        
+        <!-- Top Metrics Cards -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-400 font-medium">Total Registered Users</p>
+              <h3 id="admStatTotalUsers" class="text-2xl font-bold text-white mt-1">0</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-users"></i>
+            </div>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-400 font-medium">Active Devices</p>
+              <h3 id="admStatActiveUsers" class="text-2xl font-bold text-emerald-400 mt-1">0</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-circle-check"></i>
+            </div>
+          </div>
+          <div class="p-4 rounded-2xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+            <div>
+              <p class="text-xs text-slate-400 font-medium">Blocked / Suspended</p>
+              <h3 id="admStatBlockedUsers" class="text-2xl font-bold text-rose-400 mt-1">0</h3>
+            </div>
+            <div class="w-10 h-10 rounded-xl bg-rose-500/10 text-rose-400 flex items-center justify-center text-lg">
+              <i class="fa-solid fa-ban"></i>
+            </div>
+          </div>
+        </div>
+
+        <!-- Google Sheet Web App Integration Card -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2">
+              <i class="fa-solid fa-table-cells text-emerald-400 text-lg"></i>
+              <h3 class="text-sm font-bold">Google Sheet Auto-Sync (Webhook)</h3>
+            </div>
+            <button onclick="showSheetScriptHelper()" class="text-xs text-amber-400 hover:underline font-semibold flex items-center gap-1">
+              <i class="fa-solid fa-code"></i> Copy Apps Script Code
+            </button>
+          </div>
+          <p class="text-xs text-slate-400">
+            Paste your Google Apps Script Web App URL below. When a user registers, their Name, Mobile, City, and Device ID will automatically be sent to your Google Sheet.
+          </p>
+          <div class="flex flex-col sm:flex-row gap-2">
+            <input type="url" id="adminSheetWebhookUrl" placeholder="https://script.google.com/macros/s/.../exec" class="flex-1 text-xs px-3.5 py-2.5 rounded-xl border border-slate-700 bg-slate-800 text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+            <button onclick="saveAdminSheetWebhook()" class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center justify-center gap-1.5 whitespace-nowrap">
+              <i class="fa-solid fa-floppy-disk"></i> Save Webhook
+            </button>
+          </div>
+        </div>
+
+        <!-- Registered Users Table & Remote Control -->
+        <div class="p-5 rounded-2xl bg-slate-900 border border-slate-800 space-y-4">
+          <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold">Registered Users & Device Control</h3>
+              <p class="text-xs text-slate-400">List of all users who have signed up on this app.</p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="refreshAdminUserTable()" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-lg flex items-center gap-1">
+                <i class="fa-solid fa-rotate-right"></i> Refresh
+              </button>
+              <button onclick="exportRegisteredUsersCsv()" class="px-3 py-1.5 bg-indigo-600/80 hover:bg-indigo-600 text-white text-xs font-semibold rounded-lg flex items-center gap-1">
+                <i class="fa-solid fa-file-csv"></i> Export CSV
+              </button>
+            </div>
+          </div>
+
+          <!-- Table Container -->
+          <div class="overflow-x-auto rounded-xl border border-slate-800">
+            <table class="w-full text-left text-xs">
+              <thead class="bg-slate-800/60 text-slate-400 uppercase text-[10px] tracking-wider font-bold">
+                <tr>
+                  <th class="py-3 px-4">User Name</th>
+                  <th class="py-3 px-4">Mobile / WhatsApp</th>
+                  <th class="py-3 px-4">City</th>
+                  <th class="py-3 px-4">Device ID</th>
+                  <th class="py-3 px-4">Registered Date</th>
+                  <th class="py-3 px-4">Status</th>
+                  <th class="py-3 px-4 text-right">Remote Action</th>
+                </tr>
+              </thead>
+              <tbody id="adminUserTableBody" class="divide-y divide-slate-800 text-slate-300">
+                <!-- User rows dynamically injected -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- SCRIPT HELPER MODAL FOR GOOGLE SHEET -->
+  <div id="sheetCodeModal" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[350] hidden flex items-center justify-center p-3">
+    <div class="bg-slate-900 w-full max-w-lg rounded-3xl p-5 space-y-3 border border-slate-800 text-white">
+      <div class="flex justify-between items-center">
+        <h3 class="font-bold text-sm text-slate-100 flex items-center gap-2">
+          <i class="fa-solid fa-file-code text-emerald-400"></i> Google Apps Script Code
+        </h3>
+        <button onclick="document.getElementById('sheetCodeModal').classList.add('hidden')"><i class="fa-solid fa-xmark text-slate-400"></i></button>
+      </div>
+      <p class="text-xs text-slate-400">
+        Google Sheet kholein &rarr; <strong>Extensions &gt; Apps Script</strong> me jayein &rarr; pura purana code hata kar ye code paste karein &rarr; <strong>Deploy &gt; New deployment &gt; Web app (Anyone)</strong> karke URL copy karein:
+      </p>
+      <pre class="bg-slate-950 text-emerald-400 p-3 rounded-xl text-[10px] font-mono overflow-x-auto select-all max-h-48 border border-slate-800">
+function doPost(e) {
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var data = JSON.parse(e.postData.contents);
+  sheet.appendRow([
+    new Date(),
+    data.deviceId,
+    data.name,
+    data.phone,
+    data.email,
+    data.city,
+    data.status || 'ACTIVE'
+  ]);
+  return ContentService.createTextOutput(JSON.stringify({result: 'success'})).setMimeType(ContentService.MimeType.JSON);
+}
+
+function doGet(e) {
+  // Returns block list for automatic remote checks
+  var sheet = SpreadsheetApp.getActiveSpreadsheet().getActiveSheet();
+  var rows = sheet.getDataRange().getValues();
+  var list = [];
+  for (var i = 1; i < rows.length; i++) {
+    list.push({ deviceId: rows[i][1], status: rows[i][6] });
+  }
+  return ContentService.createTextOutput(JSON.stringify(list)).setMimeType(ContentService.MimeType.JSON);
+}
+      </pre>
+      <div class="flex justify-end">
+        <button onclick="document.getElementById('sheetCodeModal').classList.add('hidden')" class="px-4 py-1.5 bg-brand-600 text-white rounded-lg text-xs font-bold">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- IN-APP TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed top-4 right-4 z-50 flex flex-col space-y-2 max-w-xs pointer-events-none"></div>
+
+  <!-- APPLICATION LOGIC & PWA SCRIPTS -->
+  <script>
+    /* =====================================================================
+       INDIAN AI FACTORY - ARCHITECTURE & STATE STORE
+       ===================================================================== */
+    const STORAGE_KEY = 'IAF_TASKS_DATA_V1';
+    const LANG_KEY = 'IAF_APP_LANG';
+    const THEME_KEY = 'IAF_APP_THEME';
+    const USER_REG_KEY = 'IAF_USER_REGISTRATION';
+    const ALL_USERS_REG_STORE = 'IAF_CENTRAL_USERS_STORE';
+    const BLOCKED_DEVICES_STORE = 'IAF_BLOCKED_DEVICES_LIST';
+    const ADMIN_SHEET_KEY = 'IAF_GOOGLE_SHEET_WEBHOOK';
+    const ADMIN_PASS = 'IAF@Admin2026';
+
+    let currentLang = localStorage.getItem(LANG_KEY) || 'hi';
+    let currentFilter = 'today';
+    let deferredPrompt = null;
+    let audioContext = null;
+    let activeAlarmTaskId = null;
+    let speechRecognition = null;
+    let isRecordingSpeech = false;
+
+    // Pomodoro State
+    let pomoDuration = 25 * 60;
+    let pomoRemaining = pomoDuration;
+    let pomoInterval = null;
+    let isPomoRunning = false;
+    let ambientNoiseNode = null;
+
+    // Translations Dictionary (Hindi & English)
+    const translations = {
+      hi: {
+        tagline: "स्मार्ट टास्क एवं ऑटोमैटिक रिमाइंडर",
+        todayFocus: "आज की मुख्य विंडो (Today's Focus)",
+        dueToday: "आज की टास्क्स:",
+        completed: "पूरी हुई:",
+        privacyTitle: "100% सुरक्षित एवं लोकल",
+        privacyDesc: "टास्क का सारा डेटा आपके फ़ोन/ब्राउज़र में लोकली सेफ़ रहता है। कोई क्लाउड लीक नहीं।",
+        backupBtn: "बैकअप / JSON",
+        smartAiAssistant: "इंडियन AI असिस्टेंट",
+        smartAiDesc: "आसानी से बोलें या लिखें: 'कल शाम 5 बजे डॉक्टर को फोन करो alternate reminder'",
+        aiSmartCreate: "AI ऑटो टास्क क्रिएटर",
+        indianPresetsTitle: "देसी स्मार्ट प्रीसेट्स (1-टैप):",
+        tabToday: "आज की टास्क्स (Today)",
+        tabUpcoming: "आगामी (Upcoming/Cycle)",
+        tabCompleted: "पूरी हो चुकी (Done)",
+        tabAll: "सभी (All Tasks)",
+        addNewTask: "+ नई टास्क जोड़ें",
+        noTasksTitle: "कोई पेंडिंग टास्क नहीं मिली!",
+        noTasksDesc: "आज के लिए कोई रिमाइंडर नहीं बचा है। नई टास्क बनाने के लिए बटन पर क्लिक करें।",
+        addFirstTask: "पहली टास्क जोड़ें",
+        modalNewTask: "नई टास्क और स्मार्ट रिमाइंडर जोड़ें",
+        modalEditTask: "टास्क एडिट करें",
+        colTitle: "टास्क का नाम / विवरण",
+        colCategory: "कैटेगरी (Category)",
+        colPriority: "प्राथमिकता (Priority)",
+        repeatInterval: "रिमाइंडर चक्र (Repeat Frequency)",
+        smartEngine: "IAF स्मार्ट चक्र",
+        recNone: "सिर्फ एक बार (None)",
+        recDaily: "रोजाना (Daily)",
+        recAlternate: "एक दिन छोड़कर (Alternate Day)",
+        rec2Days: "हर 2 दिन बाद (Every 2 Days)",
+        recWeekly: "साप्ताहिक (Weekly)",
+        recMonthly: "मासिक (Monthly)",
+        colDueDate: "रिमाइंडर की तारीख (Due Date)",
+        colDueTime: "रिमाइंडर का समय (Time)",
+        colDescription: "अतिरिक्त विवरण / नोट्स",
+        audioAlertLabel: "समय होने पर IAF स्मार्ट रिंगटोन बजाएं",
+        cancelBtn: "रद्द करें",
+        saveTaskBtn: "टास्क सेव करें व याद दिलाएं",
+        pwaReady: "PWA इनस्टॉल उपलब्ध",
+        pwaDesc: "इंडियन AI फैक्ट्री ऐप अपने मोबाइल पर इनस्टॉल करें",
+        installApp: "Install App",
+        shortcutTitle: "मोबाइल क्रोम शॉर्टकट एवं इनस्टॉल",
+        chromeOpt1Title: "Chrome App Install (PWA)",
+        chromeOpt1Desc: "Chrome के 3 डॉट्स (⋮) पर टैप करें और 'Install App' को चुनें।",
+        chromeOpt2Title: "होम स्क्रीन पर जोड़ें (Shortcut)",
+        chromeOpt2Desc: "3 डॉट्स में 'Add to Home screen' चुनें। आपकी स्क्रीन पर IAF शॉर्टकट आ जाएगा।",
+        offlineFeatureNote: "ऑफ़लाइन मोड एक्टिव: यह ऐप बिना इंटरनेट के भी सुपरफास्ट काम करती है।",
+        gotItBtn: "ठीक है, समझ गया",
+        aiParserTitle: "इंडियन AI टास्क पार्सर व वॉयस इनपुट",
+        aiModalHelper: "सामान्य भाषा या माइक में बोलें। AI तारीख, समय और अंतराल को खुद समझ लेता है।",
+        aiParseBtn: "पार्स करें और टास्क बनाएं",
+        backupModalTitle: "लोकल डेटा बैकअप एवं रिस्टोर",
+        backupModalDesc: "आपका सारा डेटा सुरक्षित है। इसे JSON फ़ाइल में सेव करें।",
+        exportBtn: "डाउनलोड JSON बैकअप",
+        importBtn: "फ़ाइल से रीस्टोर करें",
+        toastSaved: "टास्क सफलतापूर्वक सेव हो गई!",
+        toastDeleted: "टास्क हटा दी गई।",
+        toastRestored: "डेटा रिस्टोर हो गया!",
+        nextCycle: "अगला रिमाइंडर:"
+      },
+      en: {
+        tagline: "Smart Tasks & Autonomous Reminders",
+        todayFocus: "Today's Focus Window",
+        dueToday: "Today's Tasks:",
+        completed: "Completed:",
+        privacyTitle: "100% Secure & Local Storage",
+        privacyDesc: "All task data stays inside your browser sandbox. No server or cloud leaks.",
+        backupBtn: "Backup / JSON",
+        smartAiAssistant: "Indian AI Assistant",
+        smartAiDesc: "Natural typing or Voice mic in Hindi/English",
+        aiSmartCreate: "AI Auto Task Creator",
+        indianPresetsTitle: "Desi Smart Presets (1-Tap):",
+        tabToday: "Today's Tasks",
+        tabUpcoming: "Upcoming / Recurring",
+        tabCompleted: "Completed",
+        tabAll: "All Tasks",
+        addNewTask: "+ New Task",
+        noTasksTitle: "No pending tasks found!",
+        noTasksDesc: "No reminders due right now. Click the button to add a new task.",
+        addFirstTask: "Add First Task",
+        modalNewTask: "Add New Task & Smart Reminder",
+        modalEditTask: "Edit Task Details",
+        colTitle: "Task Title / Name",
+        colCategory: "Category",
+        colPriority: "Priority",
+        repeatInterval: "Reminder Cycle (Recurrence)",
+        smartEngine: "IAF Smart Engine",
+        recNone: "Once (Single Time)",
+        recDaily: "Daily",
+        recAlternate: "Alternate Days",
+        rec2Days: "Every 2 Days",
+        recWeekly: "Weekly",
+        recMonthly: "Monthly",
+        colDueDate: "Next Due Date",
+        colDueTime: "Reminder Time",
+        colDescription: "Notes / Extra Details",
+        audioAlertLabel: "Play IAF Smart Chime when reminder is due",
+        cancelBtn: "Cancel",
+        saveTaskBtn: "Save Task & Set Reminder",
+        pwaReady: "PWA Ready to Install",
+        pwaDesc: "Install Indian AI Factory app on your mobile home screen",
+        installApp: "Install App",
+        shortcutTitle: "Mobile Chrome Shortcut & Install",
+        chromeOpt1Title: "Install App (PWA Native)",
+        chromeOpt1Desc: "Tap 3 vertical dots (⋮) in Chrome and select 'Install app'.",
+        chromeOpt2Title: "Add to Home Screen (Instant Shortcut)",
+        chromeOpt2Desc: "Tap 3 dots (⋮) and choose 'Add to Home screen' for quick launch.",
+        offlineFeatureNote: "100% Offline Ready: Works without active cellular or Wi-Fi data.",
+        gotItBtn: "Got It",
+        aiParserTitle: "Indian AI Smart Task Parser & Voice",
+        aiModalHelper: "Speak or write in natural Hinglish. The parser extracts date, time & repeat cycle automatically.",
+        aiParseBtn: "Parse & Create Task",
+        backupModalTitle: "Local Data Backup & Restore",
+        backupModalDesc: "Your data is completely private. You can export or import your JSON backup.",
+        exportBtn: "Download JSON Backup",
+        importBtn: "Restore from File",
+        toastSaved: "Task saved successfully!",
+        toastDeleted: "Task deleted.",
+        toastRestored: "Data restored successfully!",
+        nextCycle: "Next Reminder:"
+      }
+    };
+
+    /* =====================================================================
+       INITIALIZATION & PWA LIFECYCLE
+       ===================================================================== */
+    window.addEventListener('DOMContentLoaded', () => {
+      initTheme();
+      updateLanguageUI();
+      initLiveClock();
+      checkForAdminRoute();
+      checkRegistrationAndAccess();
+      checkAndInjectSampleTasks();
+      renderTasks();
+      setupPwaInstallation();
+      startReminderDaemon();
+      initSpeechRecognition();
+    });
+
+    // Check if the current URL points to Admin Portal (#admin or ?admin=true)
+    window.addEventListener('hashchange', checkForAdminRoute);
+
+    function checkForAdminRoute() {
+      const isHashAdmin = window.location.hash.toLowerCase() === '#admin';
+      const urlParams = new URLSearchParams(window.location.search);
+      const isParamAdmin = urlParams.get('admin') === 'true';
+
+      if (isHashAdmin || isParamAdmin) {
+        document.getElementById('dedicatedAdminPortal').classList.remove('hidden');
+      } else {
+        document.getElementById('dedicatedAdminPortal').classList.add('hidden');
+      }
+    }
+
+    function exitAdminPortal() {
+      if (window.location.hash.toLowerCase() === '#admin') {
+        window.location.hash = '';
+      } else {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('admin');
+        window.history.replaceState({}, '', url.pathname);
+      }
+      document.getElementById('dedicatedAdminPortal').classList.add('hidden');
+    }
+
+    // PWA Manifest dynamic injection with clean high-res canvas SVG icon (Eliminates Chrome Badge)
+    (function injectManifest() {
+      const iconSvg = `<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'>
+        <rect width='512' height='512' rx='120' fill='%234f46e5'/>
+        <circle cx='256' cy='256' r='180' stroke='white' stroke-width='24' fill='none'/>
+        <path d='M256 96 L340 216 L220 256 L300 384 L172 268 L268 228 Z' fill='%23ff9933'/>
+        <text x='50%' y='460' text-anchor='middle' font-family='Arial' font-size='55' font-weight='bold' fill='white'>IAF TASKS</text>
+      </svg>`;
+      
+      const manifest = {
+        name: "Indian AI Factory Task Reminder",
+        short_name: "IAF Tasks",
+        start_url: ".",
+        display: "standalone",
+        orientation: "portrait",
+        background_color: "#4f46e5",
+        theme_color: "#4f46e5",
+        description: "Official Indian AI Factory Task Reminder and Smart Scheduling PWA",
+        icons: [
+          {
+            src: "data:image/svg+xml," + encodeURIComponent(iconSvg),
+            sizes: "192x192 512x512",
+            type: "image/svg+xml",
+            purpose: "any maskable"
+          }
+        ]
+      };
+      const stringManifest = JSON.stringify(manifest);
+      const blob = new Blob([stringManifest], {type: 'application/json'});
+      const manifestURL = URL.createObjectURL(blob);
+      let linkTag = document.createElement('link');
+      linkTag.rel = 'manifest';
+      linkTag.href = manifestURL;
+      document.head.appendChild(linkTag);
+    })();
+
+    /* =====================================================================
+       REGISTRATION & REMOTE ACCESS CONTROL (GOOGLE SHEETS INTEGRATION)
+       ===================================================================== */
+    function getDeviceId() {
+      let id = localStorage.getItem('IAF_DEVICE_ID');
+      if (!id) {
+        id = 'IAF-DEV-' + Math.random().toString(36).substring(2, 8).toUpperCase() + '-' + Date.now().toString(36).toUpperCase();
+        localStorage.setItem('IAF_DEVICE_ID', id);
+      }
+      return id;
+    }
+
+    function checkRegistrationAndAccess() {
+      const myDeviceId = getDeviceId();
+      const blockedList = JSON.parse(localStorage.getItem(BLOCKED_DEVICES_STORE) || '[]');
+      const isSuspended = localStorage.getItem('IAF_DEVICE_SUSPENDED') === 'true' || blockedList.includes(myDeviceId);
+
+      if (isSuspended) {
+        document.getElementById('suspendedDeviceId').textContent = myDeviceId;
+        document.getElementById('suspendedScreen').classList.remove('hidden');
+        return;
+      } else {
+        document.getElementById('suspendedScreen').classList.add('hidden');
+      }
+
+      const regData = localStorage.getItem(USER_REG_KEY);
+      if (!regData) {
+        document.getElementById('registrationModal').classList.remove('hidden');
+      } else {
+        document.getElementById('registrationModal').classList.add('hidden');
+      }
+    }
+
+    async function handleRegistrationSubmit(event) {
+      event.preventDefault();
+      const btn = document.getElementById('regSubmitBtn');
+      btn.disabled = true;
+      btn.innerHTML = '<i class="fa-solid fa-spinner fa-spin mr-1"></i> Syncing to Indian AI Factory...';
+
+      const user = {
+        deviceId: getDeviceId(),
+        name: document.getElementById('regName').value.trim(),
+        phone: document.getElementById('regPhone').value.trim(),
+        email: document.getElementById('regEmail').value.trim() || 'N/A',
+        city: document.getElementById('regCity').value.trim() || 'N/A',
+        registeredAt: new Date().toISOString(),
+        status: 'ACTIVE'
+      };
+
+      // Save locally for current device
+      localStorage.setItem(USER_REG_KEY, JSON.stringify(user));
+
+      // Also maintain a central list in local storage so Admin can see all users
+      let allUsers = JSON.parse(localStorage.getItem(ALL_USERS_REG_STORE) || '[]');
+      const existingIdx = allUsers.findIndex(u => u.deviceId === user.deviceId);
+      if (existingIdx !== -1) {
+        allUsers[existingIdx] = user;
+      } else {
+        allUsers.push(user);
+      }
+      localStorage.setItem(ALL_USERS_REG_STORE, JSON.stringify(allUsers));
+
+      // Push to Google Sheets if Webhook is configured
+      const sheetUrl = localStorage.getItem(ADMIN_SHEET_KEY);
+      if (sheetUrl) {
+        try {
+          await fetch(sheetUrl, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(user)
+          });
+        } catch (err) {
+          console.warn("Sheet sync error (handled safely):", err);
+        }
+      }
+
+      document.getElementById('registrationModal').classList.add('hidden');
+      showToast(`Welcome ${user.name}! Your app is now activated.`, 'success');
+      btn.disabled = false;
+      btn.innerHTML = 'Submit & Activate App';
+    }
+
+    function checkAccessStatusOnline() {
+      const myDeviceId = getDeviceId();
+      const blockedList = JSON.parse(localStorage.getItem(BLOCKED_DEVICES_STORE) || '[]');
+      const isSuspended = localStorage.getItem('IAF_DEVICE_SUSPENDED') === 'true' || blockedList.includes(myDeviceId);
+
+      if (!isSuspended) {
+        document.getElementById('suspendedScreen').classList.add('hidden');
+        showToast('Access restored successfully!', 'success');
+      } else {
+        showToast('App is still suspended by Indian AI Factory Admin.', 'error');
+      }
+    }
+
+    /* =====================================================================
+       DEDICATED ADMIN PORTAL LOGIC (#admin)
+       ===================================================================== */
+    function authenticateDedicatedAdmin() {
+      const pin = document.getElementById('adminMasterPassword').value;
+      if (pin === ADMIN_PASS) {
+        document.getElementById('adminAuthBox').classList.add('hidden');
+        document.getElementById('adminMainDashboard').classList.remove('hidden');
+        
+        // Populate current settings
+        document.getElementById('adminSheetWebhookUrl').value = localStorage.getItem(ADMIN_SHEET_KEY) || '';
+        refreshAdminUserTable();
+        showToast('Admin Dashboard unlocked successfully.', 'success');
+      } else {
+        showToast('Incorrect Master Password!', 'error');
+      }
+    }
+
+    function saveAdminSheetWebhook() {
+      const url = document.getElementById('adminSheetWebhookUrl').value.trim();
+      localStorage.setItem(ADMIN_SHEET_KEY, url);
+      showToast('Google Sheet Webhook URL saved successfully!', 'success');
+    }
+
+    function refreshAdminUserTable() {
+      const tbody = document.getElementById('adminUserTableBody');
+      tbody.innerHTML = '';
+
+      let allUsers = JSON.parse(localStorage.getItem(ALL_USERS_REG_STORE) || '[]');
+      let blockedList = JSON.parse(localStorage.getItem(BLOCKED_DEVICES_STORE) || '[]');
+
+      // Also ensure current user device is counted if present
+      const currUser = JSON.parse(localStorage.getItem(USER_REG_KEY) || 'null');
+      if (currUser && !allUsers.some(u => u.deviceId === currUser.deviceId)) {
+        allUsers.push(currUser);
+        localStorage.setItem(ALL_USERS_REG_STORE, JSON.stringify(allUsers));
+      }
+
+      // Update Top Stats
+      const total = allUsers.length;
+      const blockedCount = allUsers.filter(u => blockedList.includes(u.deviceId)).length;
+      const activeCount = total - blockedCount;
+
+      document.getElementById('admStatTotalUsers').textContent = total;
+      document.getElementById('admStatActiveUsers').textContent = activeCount;
+      document.getElementById('admStatBlockedUsers').textContent = blockedCount;
+
+      if (allUsers.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="7" class="py-8 text-center text-slate-500 text-xs">
+              Koi bhi registered user abhi tak nahi mila hai.
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      allUsers.forEach(u => {
+        const isBlocked = blockedList.includes(u.deviceId);
+        const tr = document.createElement('tr');
+        tr.className = 'hover:bg-slate-800/40 transition';
+
+        const regDate = u.registeredAt ? new Date(u.registeredAt).toLocaleDateString('en-IN') : 'N/A';
+
+        tr.innerHTML = `
+          <td class="py-3 px-4 font-bold text-white flex items-center gap-2">
+            <span class="w-7 h-7 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs">
+              <i class="fa-solid fa-user"></i>
+            </span>
+            ${escapeHtml(u.name || 'Anonymous')}
+          </td>
+          <td class="py-3 px-4 font-mono text-emerald-400">
+            <a href="tel:${escapeHtml(u.phone)}" class="hover:underline">${escapeHtml(u.phone || 'N/A')}</a>
+          </td>
+          <td class="py-3 px-4">${escapeHtml(u.city || 'N/A')}</td>
+          <td class="py-3 px-4 font-mono text-[11px] text-slate-400">${escapeHtml(u.deviceId || 'N/A')}</td>
+          <td class="py-3 px-4 text-slate-400">${regDate}</td>
+          <td class="py-3 px-4">
+            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${isBlocked ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'}">
+              ${isBlocked ? 'SUSPENDED' : 'ACTIVE'}
+            </span>
+          </td>
+          <td class="py-3 px-4 text-right">
+            ${isBlocked 
+              ? `<button onclick="toggleUserStatus('${u.deviceId}', false)" class="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-semibold">
+                   <i class="fa-solid fa-unlock mr-1"></i> Activate
+                 </button>`
+              : `<button onclick="toggleUserStatus('${u.deviceId}', true)" class="px-2.5 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-semibold">
+                   <i class="fa-solid fa-ban mr-1"></i> Block
+                 </button>`
+            }
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function toggleUserStatus(deviceId, block) {
+      let blockedList = JSON.parse(localStorage.getItem(BLOCKED_DEVICES_STORE) || '[]');
+      const myDeviceId = getDeviceId();
+
+      if (block) {
+        if (!blockedList.includes(deviceId)) blockedList.push(deviceId);
+        if (deviceId === myDeviceId) localStorage.setItem('IAF_DEVICE_SUSPENDED', 'true');
+        showToast(`Device ${deviceId} has been blocked!`, 'warning');
+      } else {
+        blockedList = blockedList.filter(id => id !== deviceId);
+        if (deviceId === myDeviceId) localStorage.removeItem('IAF_DEVICE_SUSPENDED');
+        showToast(`Device ${deviceId} has been unblocked!`, 'success');
+      }
+
+      localStorage.setItem(BLOCKED_DEVICES_STORE, JSON.stringify(blockedList));
+      refreshAdminUserTable();
+      checkRegistrationAndAccess();
+    }
+
+    function exportRegisteredUsersCsv() {
+      const allUsers = JSON.parse(localStorage.getItem(ALL_USERS_REG_STORE) || '[]');
+      if (allUsers.length === 0) {
+        showToast('No user data to export.', 'warning');
+        return;
+      }
+
+      let csv = 'Name,Phone,Email,City,DeviceId,RegisteredAt\n';
+      allUsers.forEach(u => {
+        csv += `"${u.name}","${u.phone}","${u.email}","${u.city}","${u.deviceId}","${u.registeredAt}"\n`;
+      });
+
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `IAF_Registered_Users_${getTodayDateString()}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }
+
+    function showSheetScriptHelper() {
+      document.getElementById('sheetCodeModal').classList.remove('hidden');
+    }
+
+    // PWA Installation Events
+    function setupPwaInstallation() {
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        const banner = document.getElementById('pwaBanner');
+        if (banner && !sessionStorage.getItem('iaf_pwa_dismissed')) {
+          banner.classList.remove('hidden');
+        }
+      });
+
+      document.getElementById('installPwaBtn')?.addEventListener('click', async () => {
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          const { outcome } = await deferredPrompt.userChoice;
+          if (outcome === 'accepted') {
+            showToast('Thank you for installing Indian AI Factory App!', 'success');
+          }
+          deferredPrompt = null;
+          dismissPwaBanner();
+        } else {
+          showShortcutGuide();
+        }
+      });
+    }
+
+    function dismissPwaBanner() {
+      document.getElementById('pwaBanner').classList.add('hidden');
+      sessionStorage.setItem('iaf_pwa_dismissed', 'true');
+    }
+
+    function showShortcutGuide() {
+      document.getElementById('shortcutModal').classList.remove('hidden');
+    }
+
+    function closeShortcutModal() {
+      document.getElementById('shortcutModal').classList.add('hidden');
+    }
+
+    /* =====================================================================
+       THEME & LOCALIZATION
+       ===================================================================== */
+    function initTheme() {
+      const savedTheme = localStorage.getItem(THEME_KEY) || 'light';
+      if (savedTheme === 'dark') {
+        document.documentElement.classList.add('dark');
+        document.getElementById('themeIcon').className = 'fa-solid fa-sun text-amber-400';
+      } else {
+        document.documentElement.classList.remove('dark');
+        document.getElementById('themeIcon').className = 'fa-solid fa-moon text-slate-700';
+      }
+    }
+
+    function toggleDarkMode() {
+      const isDark = document.documentElement.classList.toggle('dark');
+      localStorage.setItem(THEME_KEY, isDark ? 'dark' : 'light');
+      document.getElementById('themeIcon').className = isDark 
+        ? 'fa-solid fa-sun text-amber-400' 
+        : 'fa-solid fa-moon text-slate-700';
+    }
+
+    function toggleLanguage() {
+      currentLang = currentLang === 'hi' ? 'en' : 'hi';
+      localStorage.setItem(LANG_KEY, currentLang);
+      updateLanguageUI();
+      renderTasks();
+    }
+
+    function updateLanguageUI() {
+      document.getElementById('currentLangLabel').textContent = currentLang === 'hi' ? 'English' : 'हिन्दी';
+      const dict = translations[currentLang];
+      
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.getAttribute('data-i18n');
+        if (dict[key]) {
+          el.textContent = dict[key];
+        }
+      });
+
+      updateTodayHeading();
+    }
+
+    function updateTodayHeading() {
+      const now = new Date();
+      const options = { weekday: 'long', day: 'numeric', month: 'short', year: 'numeric' };
+      const locale = currentLang === 'hi' ? 'hi-IN' : 'en-US';
+      document.getElementById('todayFormattedDate').textContent = now.toLocaleDateString(locale, options);
+    }
+
+    function initLiveClock() {
+      setInterval(() => {
+        const now = new Date();
+        document.getElementById('liveTime').textContent = now.toTimeString().split(' ')[0];
+      }, 1000);
+      updateTodayHeading();
+    }
+
+    /* =====================================================================
+       VOICE INPUT (SPEECH RECOGNITION - HINGLISH)
+       ===================================================================== */
+    function initSpeechRecognition() {
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (!SpeechRecognition) return;
+
+      speechRecognition = new SpeechRecognition();
+      speechRecognition.continuous = false;
+      speechRecognition.interimResults = false;
+      speechRecognition.lang = currentLang === 'hi' ? 'hi-IN' : 'en-IN';
+
+      speechRecognition.onstart = () => {
+        isRecordingSpeech = true;
+        document.getElementById('recordingIndicator').classList.remove('hidden');
+        document.getElementById('aiMicIcon').className = 'fa-solid fa-microphone-lines text-rose-600 animate-pulse';
+      };
+
+      speechRecognition.onresult = (event) => {
+        const transcript = event.results[0][0].transcript;
+        const current = document.getElementById('aiInputPrompt').value;
+        document.getElementById('aiInputPrompt').value = current ? `${current} ${transcript}` : transcript;
+        showToast(`Voice captured: "${transcript}"`, 'info');
+      };
+
+      speechRecognition.onerror = (e) => {
+        console.warn('Speech recognition error', e);
+        isRecordingSpeech = false;
+        document.getElementById('recordingIndicator').classList.add('hidden');
+        document.getElementById('aiMicIcon').className = 'fa-solid fa-microphone';
+      };
+
+      speechRecognition.onend = () => {
+        isRecordingSpeech = false;
+        document.getElementById('recordingIndicator').classList.add('hidden');
+        document.getElementById('aiMicIcon').className = 'fa-solid fa-microphone';
+      };
+    }
+
+    function toggleVoiceSpeechRecognition() {
+      if (!speechRecognition) {
+        showToast('Voice input is not supported in this browser. Please use Chrome.', 'warning');
+        return;
+      }
+      if (isRecordingSpeech) {
+        speechRecognition.stop();
+      } else {
+        speechRecognition.lang = currentLang === 'hi' ? 'hi-IN' : 'en-IN';
+        speechRecognition.start();
+      }
+    }
+
+    /* =====================================================================
+       TASK STORAGE & DATA LAYER
+       ===================================================================== */
+    function getTasksFromStorage() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        console.error("Local storage read error", e);
+        return [];
+      }
+    }
+
+    function saveTasksToStorage(tasks) {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(tasks));
+      } catch (e) {
+        console.error("Local storage save error", e);
+      }
+    }
+
+    function checkAndInjectSampleTasks() {
+      const current = getTasksFromStorage();
+      if (current.length === 0) {
+        const todayStr = getTodayDateString();
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        const tomorrowStr = formatDateToYMD(tomorrow);
+
+        const initialTasks = [
+          {
+            id: 'iaf_task_1',
+            title: 'Call Client & Share Invoice (IAF Demo)',
+            category: 'Work',
+            priority: 'high',
+            recurrence: 'daily',
+            dueDate: todayStr,
+            dueTime: '11:00',
+            description: 'Send GST quotation and project milestones',
+            completed: false,
+            audioAlert: true,
+            subtasks: [
+              { id: 'st_1', text: 'Prepare quotation PDF', done: true },
+              { id: 'st_2', text: 'Share invoice on WhatsApp', done: false }
+            ],
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 'iaf_task_2',
+            title: 'Water Plants & Morning Vitamin (Alternate Day)',
+            category: 'Health',
+            priority: 'medium',
+            recurrence: 'alternate',
+            dueDate: todayStr,
+            dueTime: '08:30',
+            description: 'Check balcony garden and hydration levels',
+            completed: false,
+            audioAlert: true,
+            subtasks: [],
+            createdAt: new Date().toISOString()
+          },
+          {
+            id: 'iaf_task_3',
+            title: 'Pay Wifi & Server Bill (Every 2 Days Reminder)',
+            category: 'Finance',
+            priority: 'high',
+            recurrence: 'every2days',
+            dueDate: tomorrowStr,
+            dueTime: '18:00',
+            description: 'Keep auto-pay checked before billing cycle',
+            completed: false,
+            audioAlert: true,
+            subtasks: [],
+            createdAt: new Date().toISOString()
+          }
+        ];
+        saveTasksToStorage(initialTasks);
+      }
+    }
+
+    /* =====================================================================
+       DESI INDIAN SMART PRESETS
+       ===================================================================== */
+    function createDesiPreset(type) {
+      const today = new Date();
+      let dueDateStr = getTodayDateString();
+      let dueTime = "10:00";
+      let title = "";
+      let category = "Finance";
+      let recurrence = "monthly";
+      let subtasks = [];
+
+      if (type === 'upi') {
+        title = "Check UPI Recurring Mandates & Bill Due";
+        category = "Finance";
+        recurrence = "monthly";
+        dueTime = "10:00";
+        // Next 1st of month
+        const nextFirst = new Date(today.getFullYear(), today.getMonth() + (today.getDate() > 1 ? 1 : 0), 1);
+        dueDateStr = formatDateToYMD(nextFirst);
+        subtasks = [
+          { id: 'st_' + Math.random(), text: 'Check bank account balance', done: false },
+          { id: 'st_' + Math.random(), text: 'Verify autopay deduction', done: false }
+        ];
+      } else if (type === 'rent') {
+        title = "Transfer House Rent to Landlord";
+        category = "Finance";
+        recurrence = "monthly";
+        dueTime = "11:30";
+        const nextFifth = new Date(today.getFullYear(), today.getMonth() + (today.getDate() > 5 ? 1 : 0), 5);
+        dueDateStr = formatDateToYMD(nextFifth);
+        subtasks = [
+          { id: 'st_' + Math.random(), text: 'Send rent slip on WhatsApp', done: false }
+        ];
+      } else if (type === 'maid') {
+        title = "Pay Domestic Help (Maid/Cook/Milkman)";
+        category = "Finance";
+        recurrence = "monthly";
+        dueTime = "18:00";
+        const nextMonthStart = new Date(today.getFullYear(), today.getMonth() + 1, 1);
+        dueDateStr = formatDateToYMD(nextMonthStart);
+      } else if (type === 'medicine') {
+        title = "Evening Vitamin & Prescription Medicine";
+        category = "Health";
+        recurrence = "daily";
+        dueTime = "21:00";
+        dueDateStr = getTodayDateString();
+      }
+
+      openTaskModal({
+        id: '',
+        title,
+        category,
+        priority: 'high',
+        recurrence,
+        dueDate: dueDateStr,
+        dueTime,
+        description: `Created via Indian AI Factory Desi Presets`,
+        audioAlert: true,
+        subtasks
+      });
+    }
+
+    /* =====================================================================
+       DATE & RECURRENCE MATH ENGINE
+       ===================================================================== */
+    function getTodayDateString() {
+      return formatDateToYMD(new Date());
+    }
+
+    function formatDateToYMD(d) {
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
+    }
+
+    function calculateNextDueDate(currentDateStr, recurrence) {
+      const base = new Date(currentDateStr + 'T00:00:00');
+      if (isNaN(base.getTime())) return currentDateStr;
+
+      let daysToAdd = 1;
+      switch (recurrence) {
+        case 'daily':
+          daysToAdd = 1;
+          break;
+        case 'alternate':
+          daysToAdd = 2;
+          break;
+        case 'every2days':
+          daysToAdd = 2;
+          break;
+        case 'weekly':
+          daysToAdd = 7;
+          break;
+        case 'monthly':
+          daysToAdd = 30;
+          break;
+        default:
+          return null;
+      }
+
+      base.setDate(base.getDate() + daysToAdd);
+      return formatDateToYMD(base);
+    }
+
+    /* =====================================================================
+       FILTERING & RENDERING ENGINE
+       ===================================================================== */
+    function setFilter(filterType) {
+      currentFilter = filterType;
+      document.querySelectorAll('.filter-tab').forEach(b => {
+        b.classList.remove('active', 'bg-white', 'dark:bg-slate-800', 'text-brand-600', 'dark:text-brand-400', 'shadow-sm');
+        b.classList.add('text-slate-600', 'dark:text-slate-400');
+      });
+
+      const activeBtn = {
+        'today': document.getElementById('tabToday'),
+        'upcoming': document.getElementById('tabUpcoming'),
+        'completed': document.getElementById('tabCompleted'),
+        'all': document.getElementById('tabAll')
+      }[filterType];
+
+      if (activeBtn) {
+        activeBtn.classList.add('active', 'bg-white', 'dark:bg-slate-800', 'text-brand-600', 'dark:text-brand-400', 'shadow-sm');
+        activeBtn.classList.remove('text-slate-600', 'dark:text-slate-400');
+      }
+
+      renderTasks();
+    }
+
+    function renderTasks() {
+      const tasks = getTasksFromStorage();
+      const container = document.getElementById('tasksContainer');
+      const emptyState = document.getElementById('emptyState');
+      const searchQuery = (document.getElementById('taskSearchInput')?.value || '').toLowerCase().trim();
+      const today = getTodayDateString();
+
+      const todayTotalTasks = tasks.filter(t => t.dueDate === today);
+      const todayDoneTasks = todayTotalTasks.filter(t => t.completed);
+      document.getElementById('statTodayCount').textContent = todayTotalTasks.length;
+      document.getElementById('statCompletedCount').textContent = todayDoneTasks.length;
+      const rate = todayTotalTasks.length > 0 ? Math.round((todayDoneTasks.length / todayTotalTasks.length) * 100) : 0;
+      document.getElementById('completionRate').textContent = `${rate}% Done`;
+
+      let filtered = tasks.filter(task => {
+        const matchesSearch = task.title.toLowerCase().includes(searchQuery) || 
+                              (task.description && task.description.toLowerCase().includes(searchQuery));
+        if (!matchesSearch) return false;
+
+        if (currentFilter === 'today') {
+          return task.dueDate === today && !task.completed;
+        } else if (currentFilter === 'upcoming') {
+          return (task.dueDate > today || task.recurrence !== 'none') && !task.completed;
+        } else if (currentFilter === 'completed') {
+          return task.completed;
+        }
+        return true;
+      });
+
+      filtered.sort((a, b) => {
+        if (a.completed !== b.completed) return a.completed ? 1 : -1;
+        if (a.dueDate === b.dueDate) {
+          return (a.dueTime || '').localeCompare(b.dueTime || '');
+        }
+        return a.dueDate.localeCompare(b.dueDate);
+      });
+
+      container.innerHTML = '';
+
+      if (filtered.length === 0) {
+        emptyState.classList.remove('hidden');
+        emptyState.classList.add('flex');
+        return;
+      } else {
+        emptyState.classList.add('hidden');
+        emptyState.classList.remove('flex');
+      }
+
+      const dict = translations[currentLang];
+
+      filtered.forEach(task => {
+        const card = document.createElement('div');
+        const isToday = task.dueDate === today;
+        const isOverdue = task.dueDate < today && !task.completed;
+
+        let priorityBadge = '';
+        if (task.priority === 'high') {
+          priorityBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800/50">High</span>`;
+        } else if (task.priority === 'medium') {
+          priorityBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800/50">Medium</span>`;
+        } else {
+          priorityBadge = `<span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/50">Low</span>`;
+        }
+
+        let recText = '';
+        if (task.recurrence === 'daily') recText = `<i class="fa-solid fa-arrows-rotate mr-1"></i> ${dict.recDaily}`;
+        else if (task.recurrence === 'alternate') recText = `<i class="fa-solid fa-clock-rotate-left mr-1"></i> ${dict.recAlternate}`;
+        else if (task.recurrence === 'every2days') recText = `<i class="fa-solid fa-calendar-day mr-1"></i> ${dict.rec2Days}`;
+        else if (task.recurrence === 'weekly') recText = `<i class="fa-solid fa-calendar-week mr-1"></i> ${dict.recWeekly}`;
+        else if (task.recurrence === 'monthly') recText = `<i class="fa-solid fa-calendar mr-1"></i> ${dict.recMonthly}`;
+
+        // Subtask progress
+        let subtasksHtml = '';
+        if (task.subtasks && task.subtasks.length > 0) {
+          const completedSubs = task.subtasks.filter(s => s.done).length;
+          const pct = Math.round((completedSubs / task.subtasks.length) * 100);
+          
+          subtasksHtml = `
+            <div class="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <div class="flex items-center justify-between text-[11px] font-semibold text-slate-500 mb-1">
+                <span>Checklist (${completedSubs}/${task.subtasks.length})</span>
+                <span>${pct}%</span>
+              </div>
+              <div class="w-full h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden mb-2">
+                <div class="h-full bg-brand-500 rounded-full" style="width: ${pct}%"></div>
+              </div>
+              <div class="space-y-1">
+                ${task.subtasks.map((st, i) => `
+                  <div class="flex items-center space-x-2 text-xs">
+                    <input type="checkbox" ${st.done ? 'checked' : ''} onchange="toggleSubtaskStatus('${task.id}', ${i})" class="rounded text-brand-600 focus:ring-brand-500">
+                    <span class="${st.done ? 'line-through text-slate-400' : 'text-slate-700 dark:text-slate-300'}">${escapeHtml(st.text)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        card.className = `p-4 rounded-2xl border transition-all duration-200 ${
+          task.completed
+            ? 'bg-slate-100/60 dark:bg-slate-900/40 border-slate-200 dark:border-slate-800 opacity-60'
+            : isOverdue
+            ? 'bg-rose-50/40 dark:bg-rose-950/20 border-rose-200 dark:border-rose-900 shadow-sm'
+            : isToday
+            ? 'bg-white dark:bg-slate-900 border-indigo-200 dark:border-indigo-800/80 shadow-md ring-1 ring-brand-500/20'
+            : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 shadow-sm'
+        }`;
+
+        card.innerHTML = `
+          <div class="flex items-start justify-between gap-3">
+            
+            <!-- Checkbox & Task Main Info -->
+            <div class="flex items-start space-x-3 flex-1 min-w-0">
+              <button onclick="toggleTaskCompletion('${task.id}')" class="mt-0.5 w-6 h-6 rounded-lg flex items-center justify-center border transition-all ${
+                task.completed
+                  ? 'bg-emerald-500 border-emerald-500 text-white shadow-sm'
+                  : 'border-slate-300 dark:border-slate-600 hover:border-brand-500 bg-white dark:bg-slate-800 text-transparent'
+              }">
+                <i class="fa-solid fa-check text-xs"></i>
+              </button>
+
+              <div class="flex-1 min-w-0">
+                <div class="flex items-center flex-wrap gap-1.5 mb-1">
+                  ${priorityBadge}
+                  <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+                    ${task.category || 'General'}
+                  </span>
+                  ${recText ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/80 text-brand-600 dark:text-brand-300 border border-indigo-200/50 dark:border-indigo-800">${recText}</span>` : ''}
+                  ${isToday && !task.completed ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-brand-600 text-white animate-pulse">TODAY</span>` : ''}
+                  ${isOverdue ? `<span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-600 text-white">OVERDUE</span>` : ''}
+                </div>
+
+                <h4 class="text-sm font-bold text-slate-800 dark:text-slate-100 leading-snug break-words ${task.completed ? 'line-through text-slate-400 dark:text-slate-500' : ''}">
+                  ${escapeHtml(task.title)}
+                </h4>
+
+                ${task.description ? `<p class="text-xs text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">${escapeHtml(task.description)}</p>` : ''}
+
+                <!-- Time & Next Cycle Indicator -->
+                <div class="flex items-center flex-wrap gap-3 mt-2 text-xs font-semibold text-slate-500 dark:text-slate-400">
+                  <span class="flex items-center gap-1">
+                    <i class="fa-regular fa-clock text-brand-600 dark:text-brand-400"></i>
+                    ${task.dueTime}
+                  </span>
+                  <span class="flex items-center gap-1">
+                    <i class="fa-regular fa-calendar text-slate-400"></i>
+                    ${task.dueDate}
+                  </span>
+                  ${task.recurrence !== 'none' ? `
+                    <span class="text-[11px] text-indigo-600 dark:text-indigo-400 font-medium">
+                      ${dict.nextCycle} ${calculateNextDueDate(task.dueDate, task.recurrence) || 'N/A'}
+                    </span>
+                  ` : ''}
+                </div>
+
+                ${subtasksHtml}
+              </div>
+            </div>
+
+            <!-- Quick Action Buttons -->
+            <div class="flex items-center space-x-1 flex-shrink-0">
+              <!-- WhatsApp Share -->
+              <button onclick="shareTaskWhatsApp('${task.id}')" title="Share via WhatsApp" class="p-1.5 text-xs text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 rounded-lg transition">
+                <i class="fa-brands fa-whatsapp text-sm"></i>
+              </button>
+
+              <!-- Postpone 2 Days Button for Quick Reschedule -->
+              <button onclick="postponeTask2Days('${task.id}')" title="2 din aage badhayein (+2 Days)" class="p-1.5 text-xs text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition">
+                <i class="fa-solid fa-forward-step"></i>
+              </button>
+
+              <!-- Edit Task -->
+              <button onclick="editTask('${task.id}')" title="Edit Task" class="p-1.5 text-xs text-slate-500 hover:text-brand-600 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition">
+                <i class="fa-solid fa-pen-to-square"></i>
+              </button>
+
+              <!-- Delete Task -->
+              <button onclick="deleteTask('${task.id}')" title="Delete Task" class="p-1.5 text-xs text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition">
+                <i class="fa-solid fa-trash-can"></i>
+              </button>
+            </div>
+
+          </div>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    /* =====================================================================
+       SUBTASK LOGIC & FORM HELPERS
+       ===================================================================== */
+    function addSubtaskField(val = '') {
+      const container = document.getElementById('subtaskInputsContainer');
+      const div = document.createElement('div');
+      div.className = 'flex items-center gap-1.5';
+      div.innerHTML = `
+        <input type="text" value="${escapeHtml(val)}" placeholder="Sub-task name..." class="subtask-item-input flex-1 text-xs px-2.5 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+        <button type="button" onclick="this.parentElement.remove()" class="p-1.5 text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950 rounded-lg text-xs">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      `;
+      container.appendChild(div);
+    }
+
+    function toggleSubtaskStatus(taskId, subtaskIndex) {
+      const tasks = getTasksFromStorage();
+      const task = tasks.find(t => t.id === taskId);
+      if (task && task.subtasks && task.subtasks[subtaskIndex]) {
+        task.subtasks[subtaskIndex].done = !task.subtasks[subtaskIndex].done;
+        saveTasksToStorage(tasks);
+        renderTasks();
+      }
+    }
+
+    function shareTaskWhatsApp(taskId) {
+      const tasks = getTasksFromStorage();
+      const task = tasks.find(t => t.id === taskId);
+      if (!task) return;
+
+      const subtasksText = task.subtasks?.length ? `\nChecklist:\n` + task.subtasks.map(s => `${s.done ? '✓' : '•'} ${s.text}`).join('\n') : '';
+      const text = `📌 *Indian AI Factory Reminder*\n*Task:* ${task.title}\n*Due Date:* ${task.dueDate} at ${task.dueTime}\n*Priority:* ${task.priority.toUpperCase()}${subtasksText}\n\n_Managed with Indian AI Factory PWA_`;
+      
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, '_blank');
+    }
+
+    /* =====================================================================
+       TASK CRUD & ACTIONS
+       ===================================================================== */
+    function openTaskModal(editingTask = null) {
+      const modal = document.getElementById('taskModal');
+      const form = document.getElementById('taskForm');
+      form.reset();
+      document.getElementById('subtaskInputsContainer').innerHTML = '';
+
+      const dict = translations[currentLang];
+
+      if (editingTask) {
+        document.getElementById('modalTitle').textContent = dict.modalEditTask;
+        document.getElementById('taskId').value = editingTask.id;
+        document.getElementById('taskTitle').value = editingTask.title;
+        document.getElementById('taskCategory').value = editingTask.category || 'Work';
+        document.getElementById('taskPriority').value = editingTask.priority || 'medium';
+        document.getElementById('taskDueDate').value = editingTask.dueDate;
+        document.getElementById('taskDueTime').value = editingTask.dueTime;
+        document.getElementById('taskDescription').value = editingTask.description || '';
+        document.getElementById('taskAudioAlert').checked = editingTask.audioAlert !== false;
+
+        const recInput = document.querySelector(`input[name="recurrence"][value="${editingTask.recurrence || 'none'}"]`);
+        if (recInput) recInput.checked = true;
+
+        if (editingTask.subtasks && Array.isArray(editingTask.subtasks)) {
+          editingTask.subtasks.forEach(st => addSubtaskField(st.text));
+        }
+      } else {
+        document.getElementById('modalTitle').textContent = dict.modalNewTask;
+        document.getElementById('taskId').value = '';
+        document.getElementById('taskDueDate').value = getTodayDateString();
+        
+        const now = new Date();
+        const nextHour = (now.getHours() + 1) % 24;
+        document.getElementById('taskDueTime').value = `${String(nextHour).padStart(2, '0')}:00`;
+        document.querySelector('input[name="recurrence"][value="none"]').checked = true;
+        document.getElementById('taskAudioAlert').checked = true;
+      }
+
+      modal.classList.remove('hidden');
+    }
+
+    function closeTaskModal() {
+      document.getElementById('taskModal').classList.add('hidden');
+    }
+
+    function handleSaveTask(event) {
+      event.preventDefault();
+      const id = document.getElementById('taskId').value || 'iaf_' + Date.now();
+      const title = document.getElementById('taskTitle').value.trim();
+      const category = document.getElementById('taskCategory').value;
+      const priority = document.getElementById('taskPriority').value;
+      const dueDate = document.getElementById('taskDueDate').value;
+      const dueTime = document.getElementById('taskDueTime').value;
+      const description = document.getElementById('taskDescription').value.trim();
+      const recurrence = document.querySelector('input[name="recurrence"]:checked')?.value || 'none';
+      const audioAlert = document.getElementById('taskAudioAlert').checked;
+
+      // Extract subtasks
+      const subtaskInputs = document.querySelectorAll('.subtask-item-input');
+      const subtasks = [];
+      subtaskInputs.forEach(input => {
+        const txt = input.value.trim();
+        if (txt) subtasks.push({ id: 'st_' + Math.random(), text: txt, done: false });
+      });
+
+      if (!title || !dueDate || !dueTime) return;
+
+      const tasks = getTasksFromStorage();
+      const existingIndex = tasks.findIndex(t => t.id === id);
+
+      const taskObj = {
+        id,
+        title,
+        category,
+        priority,
+        dueDate,
+        dueTime,
+        description,
+        recurrence,
+        audioAlert,
+        subtasks,
+        completed: existingIndex !== -1 ? tasks[existingIndex].completed : false,
+        lastReminded: existingIndex !== -1 ? tasks[existingIndex].lastReminded : null,
+        createdAt: existingIndex !== -1 ? tasks[existingIndex].createdAt : new Date().toISOString()
+      };
+
+      if (existingIndex !== -1) {
+        tasks[existingIndex] = taskObj;
+      } else {
+        tasks.push(taskObj);
+      }
+
+      saveTasksToStorage(tasks);
+      closeTaskModal();
+      renderTasks();
+      showToast(translations[currentLang].toastSaved, 'success');
+      playToneNotification(520, 'sine', 0.15);
+    }
+
+    function toggleTaskCompletion(id) {
+      const tasks = getTasksFromStorage();
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      task.completed = !task.completed;
+
+      if (task.completed && task.recurrence && task.recurrence !== 'none') {
+        const nextDate = calculateNextDueDate(task.dueDate, task.recurrence);
+        if (nextDate) {
+          const nextTask = {
+            ...task,
+            id: 'iaf_' + Date.now(),
+            dueDate: nextDate,
+            completed: false,
+            // reset subtask states for next cycle
+            subtasks: task.subtasks ? task.subtasks.map(s => ({ ...s, done: false })) : [],
+            createdAt: new Date().toISOString()
+          };
+          tasks.push(nextTask);
+          showToast(`Next cycle scheduled for ${nextDate}!`, 'info');
+        }
+      }
+
+      if (task.completed && typeof confetti === 'function') {
+        confetti({
+          particleCount: 50,
+          spread: 60,
+          origin: { y: 0.8 }
+        });
+      }
+
+      saveTasksToStorage(tasks);
+      renderTasks();
+    }
+
+    function postponeTask2Days(id) {
+      const tasks = getTasksFromStorage();
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      const base = new Date(task.dueDate + 'T00:00:00');
+      base.setDate(base.getDate() + 2);
+      task.dueDate = formatDateToYMD(base);
+
+      saveTasksToStorage(tasks);
+      renderTasks();
+      showToast(currentLang === 'hi' ? 'टास्क 2 दिन आगे बढ़ा दी गई!' : 'Task postponed by 2 days!', 'info');
+    }
+
+    function editTask(id) {
+      const tasks = getTasksFromStorage();
+      const task = tasks.find(t => t.id === id);
+      if (task) {
+        openTaskModal(task);
+      }
+    }
+
+    function deleteTask(id) {
+      let tasks = getTasksFromStorage();
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasksToStorage(tasks);
+      renderTasks();
+      showToast(translations[currentLang].toastDeleted, 'warning');
+    }
+
+    /* =====================================================================
+       SMART NATURAL AI PARSER & VOICE
+       ===================================================================== */
+    function openAiPromptModal(startMic = false) {
+      document.getElementById('aiModal').classList.remove('hidden');
+      document.getElementById('aiInputPrompt').focus();
+      if (startMic) {
+        toggleVoiceSpeechRecognition();
+      }
+    }
+
+    function closeAiModal() {
+      if (isRecordingSpeech && speechRecognition) {
+        speechRecognition.stop();
+      }
+      document.getElementById('aiModal').classList.add('hidden');
+    }
+
+    function setAiPrompt(text) {
+      document.getElementById('aiInputPrompt').value = text;
+    }
+
+    function processAiInput() {
+      const prompt = document.getElementById('aiInputPrompt').value.trim();
+      if (!prompt) return;
+
+      const lower = prompt.toLowerCase();
+      
+      let recurrence = 'none';
+      if (lower.includes('daily') || lower.includes('har din') || lower.includes('roz') || lower.includes('roj')) {
+        recurrence = 'daily';
+      } else if (lower.includes('alternate') || lower.includes('ek din chod') || lower.includes('ek din chhod')) {
+        recurrence = 'alternate';
+      } else if (lower.includes('2 din') || lower.includes('2 days') || lower.includes('do din')) {
+        recurrence = 'every2days';
+      } else if (lower.includes('week') || lower.includes('hafta')) {
+        recurrence = 'weekly';
+      } else if (lower.includes('month') || lower.includes('mahina')) {
+        recurrence = 'monthly';
+      }
+
+      const today = new Date();
+      let targetDate = new Date();
+
+      if (lower.includes('tomorrow') || lower.includes('kal') || lower.includes('agle din')) {
+        targetDate.setDate(today.getDate() + 1);
+      } else if (lower.includes('parso') || lower.includes('day after')) {
+        targetDate.setDate(today.getDate() + 2);
+      }
+
+      let dueTime = '10:00';
+      const timeMatch = lower.match(/(\d{1,2})(?::(\d{2}))?\s*(am|pm|baje|bje)?/);
+      if (timeMatch) {
+        let hour = parseInt(timeMatch[1], 10);
+        let min = timeMatch[2] ? parseInt(timeMatch[2], 10) : 0;
+        const meridian = timeMatch[3];
+
+        if (meridian === 'pm' && hour < 12) hour += 12;
+        if (meridian === 'am' && hour === 12) hour = 0;
+        if ((meridian === 'baje' || meridian === 'bje') && (lower.includes('sham') || lower.includes('raat') || lower.includes('dopahar')) && hour < 12) {
+          hour += 12;
+        }
+        dueTime = `${String(hour).padStart(2, '0')}:${String(min).padStart(2, '0')}`;
+      }
+
+      let title = prompt
+        .replace(/har din|daily|alternate day|alternate|2 din baad|every 2 days|parso|kal|tomorrow|today|aaj/gi, '')
+        .replace(/\b\d{1,2}(:\d{2})?\s*(am|pm|baje|bje)\b/gi, '')
+        .trim();
+
+      if (!title) title = "Smart AI Reminder Task";
+
+      let category = 'Work';
+      if (/medicine|dawa|gym|workout|health|paani|water/i.test(prompt)) category = 'Health';
+      else if (/bill|pay|payment|recharge|doodh|ration|money/i.test(prompt)) category = 'Finance';
+      else if (/study|class|book|exam|learn/i.test(prompt)) category = 'Study';
+      else if (/call|ghar|personal|mom|dad/i.test(prompt)) category = 'Personal';
+
+      closeAiModal();
+
+      openTaskModal({
+        id: '',
+        title: title.charAt(0).toUpperCase() + title.slice(1),
+        category,
+        priority: 'medium',
+        recurrence,
+        dueDate: formatDateToYMD(targetDate),
+        dueTime,
+        description: `Generated via Indian AI Assistant from: "${prompt}"`,
+        audioAlert: true
+      });
+    }
+
+    /* =====================================================================
+       POMODORO & SYNTHESIZED RAIN NOISE (Web Audio API)
+       ===================================================================== */
+    function openPomodoroModal() {
+      document.getElementById('pomodoroModal').classList.remove('hidden');
+    }
+
+    function closePomodoroModal() {
+      document.getElementById('pomodoroModal').classList.add('hidden');
+    }
+
+    function togglePomodoroTimer() {
+      if (isPomoRunning) {
+        clearInterval(pomoInterval);
+        isPomoRunning = false;
+        document.getElementById('pomoStartBtn').textContent = 'Resume Focus';
+      } else {
+        isPomoRunning = true;
+        document.getElementById('pomoStartBtn').textContent = 'Pause Focus';
+        pomoInterval = setInterval(() => {
+          if (pomoRemaining > 0) {
+            pomoRemaining--;
+            updatePomoDisplay();
+          } else {
+            clearInterval(pomoInterval);
+            isPomoRunning = false;
+            playToneNotification(880, 'sine', 1);
+            showToast('Pomodoro Focus Session Completed! Take a 5-min break.', 'success');
+          }
+        }, 1000);
+      }
+    }
+
+    function resetPomodoroTimer() {
+      clearInterval(pomoInterval);
+      isPomoRunning = false;
+      pomoRemaining = 25 * 60;
+      updatePomoDisplay();
+      document.getElementById('pomoStartBtn').textContent = 'Start Focus';
+    }
+
+    function updatePomoDisplay() {
+      const mins = Math.floor(pomoRemaining / 60);
+      const secs = pomoRemaining % 60;
+      document.getElementById('pomoTimerDisplay').textContent = `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function toggleAmbientNoise() {
+      const btn = document.getElementById('ambientSoundToggle');
+      if (ambientNoiseNode) {
+        ambientNoiseNode.stop();
+        ambientNoiseNode = null;
+        btn.textContent = 'Play';
+        btn.classList.remove('bg-indigo-600', 'text-white');
+      } else {
+        try {
+          const AudioCtx = window.AudioContext || window.webkitAudioContext;
+          if (!audioContext) audioContext = new AudioCtx();
+          if (audioContext.state === 'suspended') audioContext.resume();
+
+          // Generate offline Pink/Brown noise buffer for rainfall simulation
+          const bufferSize = audioContext.sampleRate * 2;
+          const noiseBuffer = audioContext.createBuffer(1, bufferSize, audioContext.sampleRate);
+          const output = noiseBuffer.getChannelData(0);
+          let b0 = 0, b1 = 0, b2 = 0;
+          for (let i = 0; i < bufferSize; i++) {
+            const white = Math.random() * 2 - 1;
+            b0 = 0.99886 * b0 + white * 0.0555179;
+            b1 = 0.99332 * b1 + white * 0.0750759;
+            b2 = 0.96900 * b2 + white * 0.1538520;
+            output[i] = (b0 + b1 + b2) * 0.1;
+          }
+
+          const whiteNoise = audioContext.createBufferSource();
+          whiteNoise.buffer = noiseBuffer;
+          whiteNoise.loop = true;
+
+          const gainNode = audioContext.createGain();
+          gainNode.gain.setValueAtTime(0.04, audioContext.currentTime);
+
+          whiteNoise.connect(gainNode);
+          gainNode.connect(audioContext.destination);
+          whiteNoise.start();
+
+          ambientNoiseNode = whiteNoise;
+          btn.textContent = 'Stop';
+          btn.classList.add('bg-indigo-600', 'text-white');
+        } catch (e) {
+          console.warn("Ambient noise not available", e);
+        }
+      }
+    }
+
+    /* =====================================================================
+       AUDIO CHIME, SNOOZE & REMINDER DAEMON
+       ===================================================================== */
+    function playToneNotification(freq = 587.33, type = 'sine', duration = 0.25) {
+      try {
+        const AudioCtx = window.AudioContext || window.webkitAudioContext;
+        if (!AudioCtx) return;
+        if (!audioContext) audioContext = new AudioCtx();
+        if (audioContext.state === 'suspended') audioContext.resume();
+
+        const osc = audioContext.createOscillator();
+        const gain = audioContext.createGain();
+
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioContext.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(freq * 1.5, audioContext.currentTime + duration);
+
+        gain.gain.setValueAtTime(0.2, audioContext.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + duration);
+
+        osc.connect(gain);
+        gain.connect(audioContext.destination);
+
+        osc.start();
+        osc.stop(audioContext.currentTime + duration);
+      } catch (err) {
+        console.warn("Audio playback inhibited until user interacts", err);
+      }
+    }
+
+    function startReminderDaemon() {
+      setInterval(() => {
+        checkDueReminders();
+      }, 15000);
+      checkDueReminders();
+    }
+
+    function checkDueReminders() {
+      const now = new Date();
+      const today = formatDateToYMD(now);
+      const currentTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+
+      const tasks = getTasksFromStorage();
+
+      tasks.forEach(task => {
+        if (!task.completed && task.dueDate === today) {
+          if (task.dueTime <= currentTime && task.lastReminded !== today) {
+            triggerActiveReminderPopup(task);
+          }
+        }
+      });
+    }
+
+    function triggerActiveReminderPopup(task) {
+      activeAlarmTaskId = task.id;
+      document.getElementById('alarmTaskTitle').textContent = task.title;
+      document.getElementById('alarmPopupModal').classList.remove('hidden');
+
+      if (task.audioAlert) {
+        playToneNotification(659.25, 'triangle', 0.5);
+        setTimeout(() => playToneNotification(880, 'sine', 0.6), 350);
+      }
+    }
+
+    function snoozeActiveAlarm(minutes) {
+      if (!activeAlarmTaskId) return;
+      const tasks = getTasksFromStorage();
+      const task = tasks.find(t => t.id === activeAlarmTaskId);
+      if (task) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() + minutes);
+        task.dueTime = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+        task.lastReminded = null; // allow alerting again
+        saveTasksToStorage(tasks);
+        renderTasks();
+        showToast(`Snoozed for ${minutes} minutes (Due at ${task.dueTime})`, 'info');
+      }
+      document.getElementById('alarmPopupModal').classList.add('hidden');
+      activeAlarmTaskId = null;
+    }
+
+    function dismissActiveAlarm(markDone = false) {
+      if (markDone && activeAlarmTaskId) {
+        toggleTaskCompletion(activeAlarmTaskId);
+      }
+      document.getElementById('alarmPopupModal').classList.add('hidden');
+      activeAlarmTaskId = null;
+    }
+
+    /* =====================================================================
+       BACKUP & RESTORE UTILITIES
+       ===================================================================== */
+    function backupRestoreModal(open) {
+      document.getElementById('backupModal').classList.toggle('hidden', !open);
+    }
+
+    function exportDataJson() {
+      const data = getTasksFromStorage();
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Indian_AI_Factory_Tasks_${getTodayDateString()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      backupRestoreModal(false);
+      showToast('Data exported successfully!', 'success');
+    }
+
+    function importDataJson(event) {
+      const file = event.target.files?.[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (Array.isArray(parsed)) {
+            saveTasksToStorage(parsed);
+            renderTasks();
+            backupRestoreModal(false);
+            showToast(translations[currentLang].toastRestored, 'success');
+          } else {
+            showToast('Invalid JSON structure', 'error');
+          }
+        } catch (err) {
+          showToast('Failed to parse file', 'error');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    /* =====================================================================
+       UI TOAST MESSAGES
+       ===================================================================== */
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+
+      let icon = 'fa-circle-info text-blue-400';
+      let border = 'border-blue-500/40';
+      if (type === 'success') {
+        icon = 'fa-circle-check text-emerald-400';
+        border = 'border-emerald-500/40';
+      } else if (type === 'warning') {
+        icon = 'fa-bell text-amber-400';
+        border = 'border-amber-500/40';
+      } else if (type === 'error') {
+        icon = 'fa-triangle-exclamation text-rose-400';
+        border = 'border-rose-500/40';
+      }
+
+      toast.className = `p-3 rounded-2xl bg-slate-900/95 text-white text-xs shadow-xl border ${border} flex items-center space-x-2.5 transform transition-all duration-300 pointer-events-auto backdrop-blur-md`;
+      toast.innerHTML = `
+        <i class="fa-solid ${icon} text-sm flex-shrink-0"></i>
+        <span class="flex-1 font-medium">${escapeHtml(message)}</span>
+      `;
+
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(-10px)';
+        setTimeout(() => toast.remove(), 300);
+      }, 4000);
+    }
+
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/[&<>"']/g, function(m) {
+        return {
+          '&': '&amp;',
+          '<': '&lt;',
+          '>': '&gt;',
+          '"': '&quot;',
+          "'": '&#039;'
+        }[m];
+      });
+    }
+  </script>
+</body>
+</html>
